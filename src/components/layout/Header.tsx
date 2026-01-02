@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Search, ShoppingBag, Heart, Menu, X, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { categories } from '@/data/products';
+import { useCart } from '@/context/CartContext';
+import { useWishlist } from '@/context/WishlistContext';
 import SearchOverlay from './SearchOverlay';
 import MegaMenu from './MegaMenu';
 
@@ -10,7 +12,8 @@ const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
-  const [cartCount] = useState(0);
+  const { totalItems, setIsOpen: setCartOpen } = useCart();
+  const { items: wishlistItems } = useWishlist();
 
   const navItems = [
     { name: 'Ghee', slug: 'ghee', hasMega: true },
@@ -78,23 +81,28 @@ const Header = () => {
               </button>
               <Link
                 to="/wishlist"
-                className="hidden md:flex p-2 hover:bg-secondary rounded-full transition-colors"
+                className="hidden md:flex p-2 hover:bg-secondary rounded-full transition-colors relative"
                 aria-label="Wishlist"
               >
                 <Heart className="w-5 h-5" />
+                {wishlistItems.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-accent text-accent-foreground text-xs font-bold rounded-full flex items-center justify-center">
+                    {wishlistItems.length}
+                  </span>
+                )}
               </Link>
-              <Link
-                to="/cart"
+              <button
+                onClick={() => setCartOpen(true)}
                 className="relative p-2 hover:bg-secondary rounded-full transition-colors"
                 aria-label="Cart"
               >
                 <ShoppingBag className="w-5 h-5" />
-                {cartCount > 0 && (
+                {totalItems > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-accent text-accent-foreground text-xs font-bold rounded-full flex items-center justify-center">
-                    {cartCount}
+                    {totalItems}
                   </span>
                 )}
-              </Link>
+              </button>
             </div>
           </div>
 
