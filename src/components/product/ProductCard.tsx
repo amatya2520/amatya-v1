@@ -1,16 +1,21 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Heart, ShoppingBag, Eye } from 'lucide-react';
+import { Heart, ShoppingBag } from 'lucide-react';
 import type { Product } from '@/data/products';
+import { useCart } from '@/context/CartContext';
+import { useWishlist } from '@/context/WishlistContext';
 
 interface ProductCardProps {
   product: Product;
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
-  const [isHovered, setIsHovered] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState(0);
+  const { addToCart, setIsOpen } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
+
+  const inWishlist = isInWishlist(product.id);
 
   const getBadgeStyle = (badge: string) => {
     if (badge === 'best-seller') return 'bg-golden text-foreground';
@@ -21,6 +26,17 @@ const ProductCard = ({ product }: ProductCardProps) => {
 
   const displayBadge = product.badges[0];
 
+  const handleQuickAdd = (e: React.MouseEvent) => {
+    e.preventDefault();
+    addToCart(product, selectedVariant, 1);
+    setIsOpen(true);
+  };
+
+  const handleWishlist = (e: React.MouseEvent) => {
+    e.preventDefault();
+    toggleWishlist(product);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -28,8 +44,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
       viewport={{ once: true }}
       transition={{ duration: 0.4 }}
       className="product-card group bg-card rounded-2xl overflow-hidden shadow-soft hover:shadow-hover"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Image Container */}
       <Link to={`/product/${product.slug}`} className="relative block aspect-square overflow-hidden">
@@ -63,23 +77,21 @@ const ProductCard = ({ product }: ProductCardProps) => {
           <div className="flex gap-2">
             <button
               className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-cream text-foreground text-sm font-medium rounded-full hover:bg-golden transition-colors"
-              onClick={(e) => {
-                e.preventDefault();
-                // Add to cart logic
-              }}
+              onClick={handleQuickAdd}
             >
               <ShoppingBag className="w-4 h-4" />
               Quick Add
             </button>
             <button
-              className="p-2.5 bg-cream/80 text-foreground rounded-full hover:bg-cream transition-colors"
-              onClick={(e) => {
-                e.preventDefault();
-                // Add to wishlist
-              }}
-              aria-label="Add to wishlist"
+              className={`p-2.5 rounded-full transition-colors ${
+                inWishlist
+                  ? 'bg-accent text-accent-foreground'
+                  : 'bg-cream/80 text-foreground hover:bg-cream'
+              }`}
+              onClick={handleWishlist}
+              aria-label={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
             >
-              <Heart className="w-4 h-4" />
+              <Heart className={`w-4 h-4 ${inWishlist ? 'fill-current' : ''}`} />
             </button>
           </div>
         </div>
@@ -96,7 +108,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
 
         {/* Variant Selector */}
         {product.variants.length > 1 && (
-          <div className="flex gap-2 mb-3">
+          <div className="flex flex-wrap gap-2 mb-3">
             {product.variants.map((variant, index) => (
               <button
                 key={variant.weight}
