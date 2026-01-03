@@ -182,7 +182,8 @@
 
   /* Search Overlay */
   .search-overlay {
-    @apply fixed inset-0 z-50 bg-background/98 backdrop-blur-sm;
+    @apply fixed inset-0 z-50 backdrop-blur-sm;
+    background-color: hsl(var(--background) / 0.98);
   }
 
   /* SVG Landscape Footer */
