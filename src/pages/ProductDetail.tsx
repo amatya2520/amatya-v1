@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, ShoppingBag, Minus, Plus, Check, Truck, Shield, Leaf, ChevronLeft } from 'lucide-react';
+import { Heart, ShoppingBag, Minus, Plus, Check, Truck, Shield, Leaf } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
-import { getProductBySlug, products, getProductsByCategory } from '@/data/products';
+import { useProduct, useCollections } from '@/hooks/useShopify';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import ProductCard from '@/components/product/ProductCard';
@@ -17,27 +17,49 @@ import {
 
 const ProductDetail = () => {
   const { slug } = useParams<{ slug: string }>();
-  const product = getProductBySlug(slug || '');
-  const { addToCart } = useCart();
+  const { data: product, isLoading } = useProduct(slug || '');
+  const { data: collections = [] } = useCollections();
+  const { addToCart, setIsOpen } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
 
   const [selectedVariant, setSelectedVariant] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
 
+  // Get related products from same collection
   const relatedProducts = useMemo(() => {
     if (!product) return [];
-    return getProductsByCategory(product.categorySlug)
+    const collection = collections.find(c => c.slug === product.categorySlug);
+    if (!collection) return [];
+    return collection.products
       .filter((p) => p.id !== product.id)
       .slice(0, 4);
-  }, [product]);
+  }, [product, collections]);
 
-  // If no related in same category, get random products
+  // Get random products if no related found
   const youMayLike = useMemo(() => {
     if (relatedProducts.length >= 4) return relatedProducts;
-    const others = products.filter((p) => p.id !== product?.id && !relatedProducts.find((r) => r.id === p.id));
+    const allProducts = collections.flatMap(c => c.products);
+    const others = allProducts.filter((p) => p.id !== product?.id && !relatedProducts.find((r) => r.id === p.id));
     return [...relatedProducts, ...others].slice(0, 4);
-  }, [product, relatedProducts]);
+  }, [product, relatedProducts, collections]);
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container py-16">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-16">
+            <div className="aspect-square bg-secondary rounded-2xl animate-pulse" />
+            <div className="space-y-4">
+              <div className="h-8 w-3/4 bg-secondary rounded animate-pulse" />
+              <div className="h-6 w-1/2 bg-secondary rounded animate-pulse" />
+              <div className="h-10 w-1/3 bg-secondary rounded animate-pulse" />
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   if (!product) {
     return (
@@ -56,7 +78,8 @@ const ProductDetail = () => {
   const inWishlist = isInWishlist(product.id);
 
   const handleAddToCart = () => {
-    addToCart(product, selectedVariant, quantity);
+    addToCart(product as any, selectedVariant, quantity);
+    setIsOpen(true);
   };
 
   return (
@@ -70,7 +93,7 @@ const ProductDetail = () => {
             {product.category}
           </Link>
           <span>/</span>
-          <span className="text-foreground">{product.name}</span>
+          <span className="text-foreground line-clamp-1">{product.name}</span>
         </nav>
       </div>
 
@@ -101,20 +124,22 @@ const ProductDetail = () => {
               {/* Badges */}
               {product.badges.length > 0 && (
                 <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-                  {product.badges.map((badge) => (
+                  {product.badges.slice(0, 2).map((badge) => (
                     <span
                       key={badge}
                       className={`px-3 py-1.5 text-sm font-medium rounded-full ${
-                        badge === 'best-seller'
+                        badge.toLowerCase().includes('best') || badge.toLowerCase().includes('seller')
                           ? 'bg-golden text-foreground'
-                          : badge === 'new-launch'
+                          : badge.toLowerCase().includes('new')
                           ? 'bg-primary text-primary-foreground'
-                          : badge === 'trending'
+                          : badge.toLowerCase().includes('trending')
                           ? 'bg-accent text-accent-foreground'
                           : 'bg-secondary text-foreground'
                       }`}
                     >
-                      {badge === 'best-seller' ? 'Best Seller' : badge === 'new-launch' ? 'New' : badge === 'trending' ? 'Trending' : badge}
+                      {badge.toLowerCase() === 'best-seller' ? 'Best Seller' : 
+                       badge.toLowerCase() === 'new-launch' ? 'New' : 
+                       badge.toLowerCase() === 'trending' ? 'Trending' : badge}
                     </span>
                   ))}
                 </div>
@@ -158,10 +183,10 @@ const ProductDetail = () => {
 
             {/* Price */}
             <div className="flex items-baseline gap-3">
-              <span className="font-serif text-4xl font-bold text-foreground">
+              <span className="font-sans text-4xl font-bold text-foreground">
                 ₹{currentPrice.toLocaleString('en-IN')}
               </span>
-              {product.comparePrice && (
+              {product.comparePrice && product.comparePrice > currentPrice && (
                 <>
                   <span className="text-xl text-muted-foreground line-through">
                     ₹{product.comparePrice.toLocaleString('en-IN')}
@@ -174,35 +199,37 @@ const ProductDetail = () => {
             </div>
 
             {/* Variant Selector */}
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-foreground">
-                Size: <span className="text-muted-foreground">{product.variants[selectedVariant].weight}</span>
-              </label>
-              <div className="flex flex-wrap gap-3">
-                {product.variants.map((variant, idx) => (
-                  <button
-                    key={variant.weight}
-                    onClick={() => setSelectedVariant(idx)}
-                    className={`relative px-6 py-3 rounded-xl font-medium transition-all ${
-                      selectedVariant === idx
-                        ? 'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2 ring-offset-background'
-                        : 'bg-secondary text-foreground hover:bg-secondary/80'
-                    }`}
-                  >
-                    {variant.weight}
-                    <span className="block text-sm opacity-80">₹{variant.price}</span>
-                    {selectedVariant === idx && (
-                      <motion.div
-                        layoutId="variant-check"
-                        className="absolute -top-1 -right-1 w-5 h-5 bg-accent text-accent-foreground rounded-full flex items-center justify-center"
-                      >
-                        <Check className="w-3 h-3" />
-                      </motion.div>
-                    )}
-                  </button>
-                ))}
+            {product.variants.length > 1 && (
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">
+                  Size: <span className="text-muted-foreground">{product.variants[selectedVariant].weight}</span>
+                </label>
+                <div className="flex flex-wrap gap-3">
+                  {product.variants.map((variant, idx) => (
+                    <button
+                      key={variant.id || idx}
+                      onClick={() => setSelectedVariant(idx)}
+                      className={`relative px-6 py-3 rounded-xl font-medium transition-all ${
+                        selectedVariant === idx
+                          ? 'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2 ring-offset-background'
+                          : 'bg-secondary text-foreground hover:bg-secondary/80'
+                      }`}
+                    >
+                      {variant.weight}
+                      <span className="block text-sm opacity-80">₹{variant.price}</span>
+                      {selectedVariant === idx && (
+                        <motion.div
+                          layoutId="variant-check"
+                          className="absolute -top-1 -right-1 w-5 h-5 bg-accent text-accent-foreground rounded-full flex items-center justify-center"
+                        >
+                          <Check className="w-3 h-3" />
+                        </motion.div>
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Quantity & Add to Cart */}
             <div className="flex flex-col sm:flex-row gap-4">
@@ -235,7 +262,7 @@ const ProductDetail = () => {
               <Button
                 variant="outline"
                 size="lg"
-                onClick={() => toggleWishlist(product)}
+                onClick={() => toggleWishlist(product as any)}
                 className={`py-6 px-6 ${inWishlist ? 'text-accent border-accent' : ''}`}
               >
                 <Heart className={`w-5 h-5 ${inWishlist ? 'fill-current' : ''}`} />
@@ -272,19 +299,21 @@ const ProductDetail = () => {
                 </AccordionContent>
               </AccordionItem>
               
-              <AccordionItem value="benefits">
-                <AccordionTrigger className="text-base font-medium">Benefits</AccordionTrigger>
-                <AccordionContent>
-                  <ul className="space-y-2">
-                    {product.benefits.map((benefit, idx) => (
-                      <li key={idx} className="flex items-center gap-2 text-muted-foreground">
-                        <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                        {benefit}
-                      </li>
-                    ))}
-                  </ul>
-                </AccordionContent>
-              </AccordionItem>
+              {product.benefits.length > 0 && (
+                <AccordionItem value="benefits">
+                  <AccordionTrigger className="text-base font-medium">Benefits</AccordionTrigger>
+                  <AccordionContent>
+                    <ul className="space-y-2">
+                      {product.benefits.map((benefit, idx) => (
+                        <li key={idx} className="flex items-center gap-2 text-muted-foreground">
+                          <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                          {benefit}
+                        </li>
+                      ))}
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+              )}
 
               {product.ingredients && (
                 <AccordionItem value="ingredients">

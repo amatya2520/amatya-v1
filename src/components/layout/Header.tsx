@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, ShoppingBag, Heart, Menu, X, ChevronDown } from 'lucide-react';
+import { Search, ShoppingBag, Heart, Menu, X, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { categories } from '@/data/products';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
+import { useCollections } from '@/hooks/useShopify';
 import SearchOverlay from './SearchOverlay';
 import MegaMenu from './MegaMenu';
 
@@ -14,18 +14,66 @@ const Header = () => {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const { totalItems, setIsOpen: setCartOpen } = useCart();
   const { items: wishlistItems } = useWishlist();
+  const { data: collections = [] } = useCollections();
+  
+  // Mobile scroll refs
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
-  const navItems = [
-    { name: 'Ghee', slug: 'ghee', hasMega: true },
-    { name: 'Honey', slug: 'honey', hasMega: true },
-    { name: 'Sweeteners', slug: 'sweeteners', hasMega: true },
-    { name: 'Seeds', slug: 'seeds', hasMega: true },
+  // Check scroll position
+  const checkScroll = () => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      setCanScrollLeft(container.scrollLeft > 0);
+      setCanScrollRight(container.scrollLeft < container.scrollWidth - container.clientWidth - 5);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', checkScroll);
+      window.addEventListener('resize', checkScroll);
+    }
+    return () => {
+      if (container) {
+        container.removeEventListener('scroll', checkScroll);
+      }
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, [collections]);
+
+  const scrollMobile = (direction: 'left' | 'right') => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      const scrollAmount = 150;
+      container.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth',
+      });
+    }
+  };
+
+  // Static nav items
+  const staticNavItems = [
     { name: 'About', slug: 'about', hasMega: false },
+  ];
+
+  // Build nav items from collections
+  const navItems = [
+    ...collections.slice(0, 5).map(col => ({
+      name: col.name,
+      slug: col.slug,
+      hasMega: true,
+    })),
+    ...staticNavItems,
   ];
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
+      <header className="sticky top-[42px] z-40 bg-background border-b border-border" style={{ backgroundColor: 'hsl(var(--background) / 0.95)', backdropFilter: 'blur(8px)' }}>
         <div className="container">
           <div className="flex items-center justify-between h-16 md:h-20">
             {/* Mobile Menu Button */}
@@ -64,7 +112,7 @@ const Header = () => {
                     {item.hasMega && <ChevronDown className="w-4 h-4" />}
                   </Link>
                   {item.hasMega && activeMenu === item.slug && (
-                    <MegaMenu categorySlug={item.slug} />
+                    <MegaMenu collectionSlug={item.slug} />
                   )}
                 </div>
               ))}
@@ -106,17 +154,46 @@ const Header = () => {
             </div>
           </div>
 
-          {/* Category Pills - Mobile */}
-          <div className="lg:hidden flex items-center gap-2 pb-3 overflow-x-auto scrollbar-hide">
-            {categories.map((category) => (
-              <Link
-                key={category.slug}
-                to={`/category/${category.slug}`}
-                className="px-4 py-1.5 text-sm font-medium whitespace-nowrap bg-secondary hover:bg-primary hover:text-primary-foreground rounded-full transition-colors"
+          {/* Category Pills - Mobile with scroll indicators */}
+          <div className="lg:hidden relative pb-3">
+            {/* Left Arrow */}
+            {canScrollLeft && (
+              <button
+                onClick={() => scrollMobile('left')}
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-background/90 shadow-md rounded-full"
+                aria-label="Scroll left"
               >
-                {category.name}
-              </Link>
-            ))}
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            )}
+            
+            {/* Scroll Container */}
+            <div
+              ref={scrollContainerRef}
+              className="flex items-center gap-2 overflow-x-auto scrollbar-hide px-1"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              {collections.map((collection) => (
+                <Link
+                  key={collection.slug}
+                  to={`/category/${collection.slug}`}
+                  className="px-4 py-1.5 text-sm font-medium whitespace-nowrap bg-secondary hover:bg-primary hover:text-primary-foreground rounded-full transition-colors flex-shrink-0"
+                >
+                  {collection.name}
+                </Link>
+              ))}
+            </div>
+            
+            {/* Right Arrow */}
+            {canScrollRight && (
+              <button
+                onClick={() => scrollMobile('right')}
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-background/90 shadow-md rounded-full"
+                aria-label="Scroll right"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -152,6 +229,13 @@ const Header = () => {
                   {item.name}
                 </Link>
               ))}
+              <Link
+                to="/wishlist"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block py-3 text-lg font-medium border-b border-border"
+              >
+                Wishlist
+              </Link>
               <Link
                 to="/contact"
                 onClick={() => setIsMobileMenuOpen(false)}
