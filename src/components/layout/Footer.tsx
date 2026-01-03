@@ -2,40 +2,56 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown, Instagram, Facebook, Youtube, Mail, Phone, MapPin } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useCollections } from '@/hooks/useShopify';
 
 interface FooterDropdownProps {
   title: string;
   children: React.ReactNode;
+  defaultOpen?: boolean;
 }
 
-const FooterDropdown = ({ title, children }: FooterDropdownProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+const FooterDropdown = ({ title, children, defaultOpen = false }: FooterDropdownProps) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const [isHovered, setIsHovered] = useState(false);
+
+  // On desktop, show on hover; on mobile, toggle on click
+  const showContent = isOpen || isHovered;
 
   return (
-    <div className="border-b border-primary-foreground/20 md:border-0">
+    <div 
+      className="border-b border-primary-foreground/20 md:border-0"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full py-4 md:cursor-default"
+        className="flex items-center justify-between w-full py-4 md:py-2 group"
       >
         <span className="font-serif text-lg font-semibold">{title}</span>
         <ChevronDown
-          className={`w-5 h-5 md:hidden transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-5 h-5 transition-transform duration-300 ${showContent ? 'rotate-180' : ''} md:opacity-60 md:group-hover:opacity-100`}
         />
       </button>
-      <AnimatePresence>
-        <motion.div
-          initial={{ height: 0 }}
-          animate={{ height: isOpen ? 'auto' : 0 }}
-          className="overflow-hidden md:!h-auto"
-        >
-          <div className="pb-4 md:pb-0 space-y-3">{children}</div>
-        </motion.div>
+      <AnimatePresence initial={false}>
+        {showContent && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="overflow-hidden"
+          >
+            <div className="pb-4 md:pb-2 space-y-3">{children}</div>
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );
 };
 
 const Footer = () => {
+  const { data: collections = [] } = useCollections();
+
   return (
     <footer className="relative bg-primary text-primary-foreground overflow-hidden">
       {/* SVG Landscape Background */}
@@ -167,18 +183,15 @@ const Footer = () => {
 
           {/* Categories */}
           <FooterDropdown title="Categories">
-            <Link to="/category/ghee" className="block text-sm opacity-80 hover:opacity-100 transition-opacity">
-              Ghee (Gir Cow)
-            </Link>
-            <Link to="/category/honey" className="block text-sm opacity-80 hover:opacity-100 transition-opacity">
-              Honey
-            </Link>
-            <Link to="/category/sweeteners" className="block text-sm opacity-80 hover:opacity-100 transition-opacity">
-              Natural Sweeteners
-            </Link>
-            <Link to="/category/seeds" className="block text-sm opacity-80 hover:opacity-100 transition-opacity">
-              Seeds
-            </Link>
+            {collections.map((collection) => (
+              <Link
+                key={collection.slug}
+                to={`/category/${collection.slug}`}
+                className="block text-sm opacity-80 hover:opacity-100 transition-opacity"
+              >
+                {collection.name}
+              </Link>
+            ))}
           </FooterDropdown>
 
           {/* Policies */}

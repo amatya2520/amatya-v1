@@ -1,9 +1,13 @@
 import { motion } from 'framer-motion';
-import { getFeaturedProducts } from '@/data/products';
+import { useFeaturedProducts } from '@/hooks/useShopify';
 import ProductCard from '../product/ProductCard';
 
 const FeaturedProducts = () => {
-  const featuredProducts = getFeaturedProducts();
+  const { data: featuredProducts = [] } = useFeaturedProducts();
+
+  if (featuredProducts.length === 0) {
+    return null;
+  }
 
   return (
     <section className="py-16 md:py-24">
@@ -23,8 +27,8 @@ const FeaturedProducts = () => {
           </p>
         </motion.div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featuredProducts.map((product) => (
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          {featuredProducts.slice(0, 8).map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>

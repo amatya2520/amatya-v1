@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Heart, ShoppingBag } from 'lucide-react';
-import type { Product } from '@/data/products';
+import type { NormalizedProduct } from '@/lib/shopify';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 
 interface ProductCardProps {
-  product: Product;
+  product: NormalizedProduct;
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
@@ -18,24 +18,45 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const inWishlist = isInWishlist(product.id);
 
   const getBadgeStyle = (badge: string) => {
-    if (badge === 'best-seller') return 'bg-golden text-foreground';
-    if (badge === 'new-launch') return 'bg-primary text-primary-foreground';
-    if (badge === 'trending') return 'bg-accent text-accent-foreground';
+    const lowerBadge = badge.toLowerCase();
+    if (lowerBadge === 'best-seller' || lowerBadge === 'best seller' || lowerBadge === 'bestseller') {
+      return 'bg-golden text-foreground';
+    }
+    if (lowerBadge === 'new-launch' || lowerBadge === 'new') {
+      return 'bg-primary text-primary-foreground';
+    }
+    if (lowerBadge === 'trending') {
+      return 'bg-accent text-accent-foreground';
+    }
     return 'bg-secondary text-foreground';
+  };
+
+  const getBadgeLabel = (badge: string) => {
+    const lowerBadge = badge.toLowerCase();
+    if (lowerBadge === 'best-seller' || lowerBadge === 'bestseller') return 'Best Seller';
+    if (lowerBadge === 'new-launch') return 'New';
+    if (lowerBadge === 'trending') return 'Trending';
+    // For badge:XYZ format, return XYZ
+    if (badge.toLowerCase().startsWith('badge:')) return badge.substring(6);
+    return badge;
   };
 
   const displayBadge = product.badges[0];
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
-    addToCart(product, selectedVariant, 1);
+    e.stopPropagation();
+    addToCart(product as any, selectedVariant, 1);
     setIsOpen(true);
   };
 
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
-    toggleWishlist(product);
+    e.stopPropagation();
+    toggleWishlist(product as any);
   };
+
+  const currentPrice = product.variants[selectedVariant]?.price || product.price;
 
   return (
     <motion.div
@@ -65,25 +86,23 @@ const ProductCard = ({ product }: ProductCardProps) => {
         {/* Badge */}
         {displayBadge && (
           <span className={`product-badge ${getBadgeStyle(displayBadge)}`}>
-            {displayBadge === 'best-seller' && 'Best Seller'}
-            {displayBadge === 'new-launch' && 'New'}
-            {displayBadge === 'trending' && 'Trending'}
-            {!['best-seller', 'new-launch', 'trending'].includes(displayBadge) && displayBadge}
+            {getBadgeLabel(displayBadge)}
           </span>
         )}
 
         {/* Action Buttons */}
-        <div className="product-overlay absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-foreground/80 to-transparent opacity-0 translate-y-4 transition-all duration-300">
+        <div className="product-overlay absolute inset-x-0 bottom-0 p-3 md:p-4 bg-gradient-to-t from-foreground/80 to-transparent opacity-0 translate-y-4 transition-all duration-300">
           <div className="flex gap-2">
             <button
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-cream text-foreground text-sm font-medium rounded-full hover:bg-golden transition-colors"
+              className="flex-1 flex items-center justify-center gap-1 md:gap-2 py-2 md:py-2.5 bg-cream text-foreground text-xs md:text-sm font-medium rounded-full hover:bg-golden transition-colors"
               onClick={handleQuickAdd}
             >
-              <ShoppingBag className="w-4 h-4" />
-              Quick Add
+              <ShoppingBag className="w-3 h-3 md:w-4 md:h-4" />
+              <span className="hidden sm:inline">Quick Add</span>
+              <span className="sm:hidden">Add</span>
             </button>
             <button
-              className={`p-2.5 rounded-full transition-colors ${
+              className={`p-2 md:p-2.5 rounded-full transition-colors ${
                 inWishlist
                   ? 'bg-accent text-accent-foreground'
                   : 'bg-cream/80 text-foreground hover:bg-cream'
@@ -91,29 +110,32 @@ const ProductCard = ({ product }: ProductCardProps) => {
               onClick={handleWishlist}
               aria-label={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
             >
-              <Heart className={`w-4 h-4 ${inWishlist ? 'fill-current' : ''}`} />
+              <Heart className={`w-3 h-3 md:w-4 md:h-4 ${inWishlist ? 'fill-current' : ''}`} />
             </button>
           </div>
         </div>
       </Link>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="p-3 md:p-4">
         <Link to={`/product/${product.slug}`}>
-          <h3 className="font-medium text-foreground group-hover:text-accent transition-colors line-clamp-1">
+          <h3 className="font-sans text-sm md:text-base font-semibold text-foreground group-hover:text-accent transition-colors line-clamp-1">
             {product.name}
           </h3>
         </Link>
-        <p className="text-sm text-muted-foreground mb-3">{product.shortDescription}</p>
+        <p className="text-xs md:text-sm text-muted-foreground mb-2 md:mb-3 line-clamp-1">{product.shortDescription}</p>
 
         {/* Variant Selector */}
         {product.variants.length > 1 && (
-          <div className="flex flex-wrap gap-2 mb-3">
-            {product.variants.map((variant, index) => (
+          <div className="flex flex-wrap gap-1 md:gap-2 mb-2 md:mb-3">
+            {product.variants.slice(0, 3).map((variant, index) => (
               <button
-                key={variant.weight}
-                onClick={() => setSelectedVariant(index)}
-                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                key={variant.id || index}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setSelectedVariant(index);
+                }}
+                className={`px-2 md:px-3 py-0.5 md:py-1 text-[10px] md:text-xs font-medium rounded-full transition-colors ${
                   selectedVariant === index
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-secondary text-foreground hover:bg-secondary/80'
@@ -127,11 +149,11 @@ const ProductCard = ({ product }: ProductCardProps) => {
 
         {/* Price */}
         <div className="flex items-center gap-2">
-          <span className="font-serif text-xl font-bold text-foreground">
-            ₹{product.variants[selectedVariant]?.price || product.price}
+          <span className="font-sans text-lg md:text-xl font-bold text-foreground">
+            ₹{currentPrice}
           </span>
-          {product.comparePrice && (
-            <span className="text-sm text-muted-foreground line-through">
+          {product.comparePrice && product.comparePrice > currentPrice && (
+            <span className="text-xs md:text-sm text-muted-foreground line-through">
               ₹{product.comparePrice}
             </span>
           )}
