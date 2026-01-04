@@ -27,6 +27,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const addToCart = useCallback((product: Product, variantIndex: number, quantity = 1) => {
+    // Validate inputs
+    if (!product || variantIndex < 0 || !product.variants?.[variantIndex]) {
+      toast.error('Invalid product or variant');
+      return;
+    }
+
     setItems((prev) => {
       const existingIndex = prev.findIndex(
         (item) => item.product.id === product.id && item.variantIndex === variantIndex
@@ -41,9 +47,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return [...prev, { product, variantIndex, quantity }];
     });
 
+    const variant = product.variants[variantIndex];
     toast.success(`${product.name} added to cart`, {
-      description: `${product.variants[variantIndex].weight} × ${quantity}`,
+      description: `${variant.weight} × ${quantity}`,
     });
+    
+    // Auto-open cart drawer
+    setIsOpen(true);
   }, []);
 
   const removeFromCart = useCallback((productId: string, variantIndex: number) => {
@@ -72,7 +82,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce(
-    (sum, item) => sum + item.product.variants[item.variantIndex].price * item.quantity,
+    (sum, item) => {
+      const price = item.product.variants[item.variantIndex]?.price || 0;
+      return sum + price * item.quantity;
+    },
     0
   );
 

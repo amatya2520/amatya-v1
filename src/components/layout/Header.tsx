@@ -73,8 +73,8 @@ const Header = () => {
 
   return (
     <>
-      <header className="sticky top-[42px] z-40 bg-background border-b border-border" style={{ backgroundColor: 'hsl(var(--background) / 0.95)', backdropFilter: 'blur(8px)' }}>
-        <div className="container">
+      <header className="sticky top-[42px] z-40 bg-background border-b border-border w-full max-w-full overflow-x-hidden" style={{ backgroundColor: 'hsl(var(--background) / 0.95)', backdropFilter: 'blur(8px)' }}>
+        <div className="container max-w-full">
           <div className="flex items-center justify-between h-16 md:h-20">
             {/* Mobile Menu Button */}
             <button

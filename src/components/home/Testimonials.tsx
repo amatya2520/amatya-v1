@@ -11,12 +11,20 @@ const Testimonials = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const checkScroll = () => {
     const container = scrollRef.current;
     if (container) {
       setCanScrollLeft(container.scrollLeft > 0);
       setCanScrollRight(container.scrollLeft < container.scrollWidth - container.clientWidth - 5);
+      
+      // Calculate active index for mobile dots
+      if (testimonials.length > 0) {
+        const cardWidth = container.scrollWidth / testimonials.length;
+        const newIndex = Math.round(container.scrollLeft / cardWidth);
+        setActiveIndex(Math.min(newIndex, testimonials.length - 1));
+      }
     }
   };
 
@@ -56,8 +64,8 @@ const Testimonials = () => {
   }
 
   return (
-    <section className="py-16 md:py-24 bg-primary text-primary-foreground overflow-hidden">
-      <div className="container">
+    <section className="py-16 md:py-24 bg-primary text-primary-foreground w-full overflow-x-hidden">
+      <div className="container px-4 max-w-full">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -74,11 +82,11 @@ const Testimonials = () => {
         </motion.div>
 
         <div className="relative">
-          {/* Left Arrow */}
+          {/* Left Arrow - Desktop Only */}
           {canScrollLeft && (
             <button
               onClick={() => scroll('left')}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center bg-primary-foreground/20 backdrop-blur-sm rounded-full hover:bg-primary-foreground/30 transition-colors"
+              className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 items-center justify-center bg-primary-foreground/20 backdrop-blur-sm rounded-full hover:bg-primary-foreground/30 transition-colors"
               aria-label="Scroll left"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -87,7 +95,7 @@ const Testimonials = () => {
 
           <div
             ref={scrollRef}
-            className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide px-1"
+            className="flex gap-4 md:gap-6 overflow-x-auto pb-4 scrollbar-hide px-1 snap-x snap-mandatory md:snap-none"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {testimonials.map((testimonial, index) => (
@@ -97,7 +105,7 @@ const Testimonials = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="relative flex-shrink-0 w-[320px] md:w-[360px] p-6 bg-primary-foreground/10 backdrop-blur-sm rounded-2xl"
+                className="relative flex-shrink-0 w-[85vw] max-w-[320px] md:w-[360px] md:max-w-none p-4 md:p-6 bg-primary-foreground/10 backdrop-blur-sm rounded-2xl snap-center md:snap-none"
               >
                 <Quote className="absolute top-4 right-4 w-8 h-8 opacity-20" />
                 
@@ -179,16 +187,40 @@ const Testimonials = () => {
             ))}
           </div>
 
-          {/* Right Arrow */}
+          {/* Right Arrow - Desktop Only */}
           {canScrollRight && (
             <button
               onClick={() => scroll('right')}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center bg-primary-foreground/20 backdrop-blur-sm rounded-full hover:bg-primary-foreground/30 transition-colors"
+              className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 items-center justify-center bg-primary-foreground/20 backdrop-blur-sm rounded-full hover:bg-primary-foreground/30 transition-colors"
               aria-label="Scroll right"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
           )}
+
+          {/* Pagination Dots - Mobile Only */}
+          <div className="flex md:hidden justify-center gap-2 mt-4">
+            {testimonials.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  if (scrollRef.current) {
+                    const cardWidth = scrollRef.current.scrollWidth / testimonials.length;
+                    scrollRef.current.scrollTo({
+                      left: index * cardWidth,
+                      behavior: 'smooth'
+                    });
+                  }
+                }}
+                className={`h-2.5 rounded-full transition-all duration-300 ${
+                  index === activeIndex
+                    ? 'bg-primary-foreground w-5' 
+                    : 'bg-primary-foreground/30 w-2.5'
+                }`}
+                aria-label={`Go to review ${index + 1}`}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </section>
