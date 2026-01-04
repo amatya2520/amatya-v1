@@ -46,8 +46,8 @@ const CategoryCircles = () => {
   }
 
   return (
-    <section className="py-16 bg-gradient-cream overflow-hidden">
-      <div className="container">
+    <section className="py-16 bg-gradient-cream w-full overflow-x-hidden">
+      <div className="container px-4 max-w-full">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -93,12 +93,17 @@ const CategoryCircles = () => {
                   to={`/category/${category.slug}`}
                   className="group flex flex-col items-center"
                 >
-                  <div className="category-circle w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 border-4 border-primary/20 group-hover:border-golden shadow-soft overflow-hidden">
-                    <img
-                      src={category.image}
-                      alt={category.name}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
+                  {/* Container with extra padding to prevent hover scale clipping */}
+                  <div className="p-2 -m-2">
+                    <div className="category-circle w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 border-4 border-primary/20 group-hover:border-golden shadow-soft overflow-visible transition-transform duration-500 group-hover:scale-110">
+                      <div className="w-full h-full rounded-full overflow-hidden">
+                        <img
+                          src={category.image}
+                          alt={category.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </div>
                   </div>
                   <span className="mt-4 font-medium text-foreground group-hover:text-accent transition-colors">
                     {category.name}

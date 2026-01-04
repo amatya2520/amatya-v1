@@ -34,8 +34,8 @@ const MegaMenu = ({ collectionSlug }: MegaMenuProps) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
       transition={{ duration: 0.2 }}
-      className="absolute top-full left-1/2 -translate-x-1/2 w-[90vw] max-w-4xl bg-popover border border-border shadow-card rounded-xl overflow-hidden z-50"
-      style={{ maxWidth: 'min(90vw, 900px)' }}
+      className="absolute top-full left-1/2 -translate-x-1/2 bg-popover border border-border shadow-card rounded-xl overflow-hidden z-50"
+      style={{ width: 'min(90vw, 900px)', maxWidth: 'calc(100vw - 2rem)' }}
     >
       {/* SVG Background Pattern */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
