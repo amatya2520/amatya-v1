@@ -46,7 +46,7 @@ const CategoryCircles = () => {
   }
 
   return (
-    <section className="py-16 bg-gradient-cream w-full overflow-x-hidden">
+    <section className="py-16 md:py-10 bg-gradient-cream w-full mt-5 overflow-x-hidden">
       <div className="container px-4 max-w-full">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -63,12 +63,12 @@ const CategoryCircles = () => {
           </p>
         </motion.div>
 
-        <div className="relative">
+        <div className="relative pt-8 pb-8">
           {/* Left Arrow */}
           {canScrollLeft && (
             <button
               onClick={() => scroll('left')}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center bg-background/90 shadow-md rounded-full md:hidden"
+              className="absolute left-[30%] top-[95%] -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center bg-background/90 shadow-md rounded-full md:hidden"
               aria-label="Scroll left"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -77,7 +77,7 @@ const CategoryCircles = () => {
 
           <div
             ref={scrollRef}
-            className="flex gap-6 md:gap-8 lg:gap-12 overflow-x-auto pb-4 scrollbar-hide justify-start md:justify-center px-2"
+            className="flex gap-6 md:gap-8 lg:gap-12 overflow-x-auto py-4 scrollbar-hide justify-start md:justify-center px-2"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {categories.map((category, index) => (
@@ -94,7 +94,7 @@ const CategoryCircles = () => {
                   className="group flex flex-col items-center"
                 >
                   {/* Container with extra padding to prevent hover scale clipping */}
-                  <div className="p-2 -m-2">
+                  <div className="p-4 -m-4">
                     <div className="category-circle w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 border-4 border-primary/20 group-hover:border-golden shadow-soft overflow-visible transition-transform duration-500 group-hover:scale-110">
                       <div className="w-full h-full rounded-full overflow-hidden">
                         <img
@@ -120,7 +120,7 @@ const CategoryCircles = () => {
           {canScrollRight && (
             <button
               onClick={() => scroll('right')}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center bg-background/90 shadow-md rounded-full md:hidden"
+              className="absolute right-[30%] top-[95%] -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center bg-background/90 shadow-md rounded-full md:hidden"
               aria-label="Scroll right"
             >
               <ChevronRight className="w-5 h-5" />

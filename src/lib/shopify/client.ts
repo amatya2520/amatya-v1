@@ -2,8 +2,15 @@
 
 const SHOPIFY_DOMAIN = import.meta.env.VITE_SHOPIFY_DOMAIN;
 const SHOPIFY_ACCESS_TOKEN = import.meta.env.VITE_SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+const SHOPIFY_VERSION = import.meta.env.VITE_SHOPIFY_VERSION as string | undefined;
 
-const endpoint = SHOPIFY_DOMAIN ? `https://${SHOPIFY_DOMAIN}/api/2024-01/graphql.json` : null;
+// IMPORTANT:
+// This project uses the Storefront Cart API for checkout (`cartCreate` → `checkoutUrl`).
+const DEFAULT_STOREFRONT_API_VERSION = SHOPIFY_VERSION?.trim().replace(/^"+|"+$/g, '') || '2026-01';
+
+const apiVersion = DEFAULT_STOREFRONT_API_VERSION;
+
+const endpoint = SHOPIFY_DOMAIN ? `https://${SHOPIFY_DOMAIN}/api/${apiVersion}/graphql.json` : null;
 
 export async function shopifyFetch<T>(query: string, variables: Record<string, unknown> = {}): Promise<T | null> {
   if (!endpoint || !SHOPIFY_ACCESS_TOKEN) {

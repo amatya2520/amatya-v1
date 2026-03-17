@@ -69,31 +69,26 @@ const CategoryFilter = () => {
           </p>
         </motion.div>
 
-        <div className="grid lg:grid-cols-4 gap-8">
-          {/* Tabs & Description Section */}
-          <div className="lg:col-span-1">
-            {/* Category Tabs - Mobile Carousel */}
-            <div className="relative lg:relative-auto">
-              {canScrollLeft && (
-                <button
-                  onClick={() => scrollTabs('left')}
-                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-background/90 shadow-md rounded-full lg:hidden"
-                  aria-label="Scroll left"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-              )}
-
+        {/* Category Tabs - Mobile/Tablet: Centered, smaller buttons with carousel and dots */}
+        <div className="mb-8 lg:hidden">
+          <div className="flex justify-center px-0">
+            <div className="relative w-full max-w-full">
+              {/* Fade mask left */}
+              <div className="pointer-events-none absolute left-0 top-0 h-full w-6 z-10" style={{background: 'linear-gradient(to right, rgba(249,247,242,1), rgba(249,247,242,0))'}} />
+              {/* Fade mask right */}
+              <div className="pointer-events-none absolute right-0 top-0 h-full w-6 z-10" style={{background: 'linear-gradient(to left, rgba(249,247,242,1), rgba(249,247,242,0))'}} />
               <div
                 ref={tabScrollRef}
-                className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-4 lg:pb-0 mb-6 lg:mb-8 scrollbar-hide"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                className="flex gap-2 overflow-x-auto scrollbar-hide pb-4 snap-x snap-mandatory justify-start px-4"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', paddingLeft: 12, paddingRight: 12 }}
               >
+                {/* Spacer for left padding */}
+                <div className="flex-shrink-0 w-2" />
                 {collections.map((collection, index) => (
                   <button
                     key={collection.slug}
                     onClick={() => setActiveIndex(index)}
-                    className={`px-5 py-3 text-left font-medium rounded-lg whitespace-nowrap transition-all flex-shrink-0 ${
+                    className={`px-3 py-2 text-xs md:text-sm font-medium rounded-lg whitespace-nowrap transition-all flex-shrink-0 snap-start ${
                       activeIndex === index
                         ? 'bg-primary text-primary-foreground shadow-soft'
                         : 'bg-secondary text-foreground hover:bg-secondary/80'
@@ -102,27 +97,62 @@ const CategoryFilter = () => {
                     {collection.name}
                   </button>
                 ))}
+                {/* Spacer for right padding */}
+                <div className="flex-shrink-0 w-2" />
               </div>
+              {/* Dots Indicator */}
+              <div className="flex justify-center gap-1.5 mt-2">
+                {collections.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      setActiveIndex(index);
+                      if (tabScrollRef.current) {
+                        const button = tabScrollRef.current.children[index+1] as HTMLElement;
+                        button?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                      }
+                    }}
+                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                      activeIndex === index 
+                        ? 'bg-primary w-4' 
+                        : 'bg-muted-foreground/30'
+                    }`}
+                    aria-label={`Go to ${collections[index].name}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
 
-              {canScrollRight && (
+        <div className="grid lg:grid-cols-4 gap-8">
+          {/* Tabs & Description Section */}
+          <div className="lg:col-span-1 hidden lg:block">
+            {/* Category Tabs - Desktop */}
+            <div className="flex flex-col gap-2 mb-8">
+              {collections.map((collection, index) => (
                 <button
-                  onClick={() => scrollTabs('right')}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-background/90 shadow-md rounded-full lg:hidden"
-                  aria-label="Scroll right"
+                  key={collection.slug}
+                  onClick={() => setActiveIndex(index)}
+                  className={`px-5 py-3 text-left font-medium rounded-lg whitespace-nowrap transition-all ${
+                    activeIndex === index
+                      ? 'bg-primary text-primary-foreground shadow-soft'
+                      : 'bg-secondary text-foreground hover:bg-secondary/80'
+                  }`}
                 >
-                  <ChevronRight className="w-4 h-4" />
+                  {collection.name}
                 </button>
-              )}
+              ))}
             </div>
 
-            {/* Category Description - Shows below tabs on mobile */}
+            {/* Category Description - Desktop */}
             {activeCollection && (
               <motion.div
                 key={activeCollection.slug}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
-                className="p-6 bg-secondary rounded-xl mb-6 lg:mb-0"
+                className="p-6 bg-secondary rounded-xl"
               >
                 <h3 className="font-serif text-xl font-semibold mb-2">
                   {activeCollection.name}
@@ -140,6 +170,32 @@ const CategoryFilter = () => {
             )}
           </div>
 
+          {/* Category Description - Mobile/Tablet */}
+          {activeCollection && (
+            <div className="lg:hidden mb-6">
+              <motion.div
+                key={activeCollection.slug}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className="p-6 bg-secondary rounded-xl"
+              >
+                <h3 className="font-serif text-xl font-semibold mb-2">
+                  {activeCollection.name}
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {activeCollection.description}
+                </p>
+                <Link
+                  to={`/category/${activeCollection.slug}`}
+                  className="text-sm font-medium text-accent hover:underline"
+                >
+                  View All Products →
+                </Link>
+              </motion.div>
+            </div>
+          )}
+
           {/* Products Grid */}
           <div className="lg:col-span-3">
             <motion.div
@@ -147,7 +203,7 @@ const CategoryFilter = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6"
+              className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6"
             >
               {categoryProducts.length > 0 ? (
                 categoryProducts.slice(0, 6).map((product) => (

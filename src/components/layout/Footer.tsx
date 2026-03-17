@@ -158,8 +158,8 @@ const Footer = () => {
           {/* Brand */}
           <div className="lg:col-span-1">
             <Link to="/" className="inline-block mb-6">
-              <span className="font-serif text-3xl font-bold">AMATYA</span>
-              <span className="block text-xs tracking-[0.3em] opacity-80 mt-1">
+              <span className="font-brand-samarkan text-3xl tracking-[1px] font-bold">amatya</span>
+              <span className="block text-xs tracking-[0.23em] opacity-80 mt-1">
                 THE AMRIT ESSENCE
               </span>
             </Link>
@@ -199,10 +199,10 @@ const Footer = () => {
             <Link to="/privacy-policy" className="block text-sm opacity-80 hover:opacity-100 transition-opacity">
               Privacy Policy
             </Link>
-            <Link to="/terms-conditions" className="block text-sm opacity-80 hover:opacity-100 transition-opacity">
+            <Link to="/terms-and-conditions" className="block text-sm opacity-80 hover:opacity-100 transition-opacity">
               Terms & Conditions
             </Link>
-            <Link to="/refund-policy" className="block text-sm opacity-80 hover:opacity-100 transition-opacity">
+            <Link to="/refund-and-return-policy" className="block text-sm opacity-80 hover:opacity-100 transition-opacity">
               Refund & Return Policy
             </Link>
             <Link to="/shipping-policy" className="block text-sm opacity-80 hover:opacity-100 transition-opacity">
@@ -212,13 +212,13 @@ const Footer = () => {
 
           {/* Contact */}
           <FooterDropdown title="Contact Us">
-            <a href="mailto:hello@amatya.in" className="flex items-center gap-2 text-sm opacity-80 hover:opacity-100 transition-opacity">
+            <a href="mailto:amatya2520@gmail.com" className="flex items-center gap-2 text-sm opacity-80 hover:opacity-100 transition-opacity">
               <Mail className="w-4 h-4" />
-              hello@amatya.in
+              amatya2520@gmail.com
             </a>
-            <a href="tel:+919876543210" className="flex items-center gap-2 text-sm opacity-80 hover:opacity-100 transition-opacity">
+            <a href="tel:+918435170623" className="flex items-center gap-2 text-sm opacity-80 hover:opacity-100 transition-opacity">
               <Phone className="w-4 h-4" />
-              +91 98765 43210
+              +91 84351 70623
             </a>
             <p className="flex items-start gap-2 text-sm opacity-80">
               <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />

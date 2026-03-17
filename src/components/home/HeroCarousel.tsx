@@ -1,159 +1,128 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useHeroBanners } from '@/hooks/useShopify';
-import heroBanner1 from '@/assets/hero-banner-1.jpg';
-import heroBanner2 from '@/assets/hero-banner-2.jpg';
-import heroBanner3 from '@/assets/hero-banner-3.jpg';
+import { useMemo, useEffect, useState } from "react"
+import { useHeroBanners } from "@/hooks/useShopify"
 
-// Image map for fallback local images
-const imageMap: Record<string, string> = {
-  '/hero-banner-1.jpg': heroBanner1,
-  '/hero-banner-2.jpg': heroBanner2,
-  '/hero-banner-3.jpg': heroBanner3,
-};
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel"
 
-const HeroCarousel = () => {
-  const { data: slides = [] } = useHeroBanners();
-  const [current, setCurrent] = useState(0);
-  const [direction, setDirection] = useState(0);
+import Autoplay from "embla-carousel-autoplay"
+import type { CarouselApi } from "@/components/ui/carousel"
 
-  useEffect(() => {
-    if (slides.length === 0) return;
-    const timer = setInterval(() => {
-      setDirection(1);
-      setCurrent((prev) => (prev + 1) % slides.length);
-    }, 6000);
-    return () => clearInterval(timer);
-  }, [slides.length]);
 
-  const goTo = useCallback((index: number) => {
-    setDirection(index > current ? 1 : -1);
-    setCurrent(index);
-  }, [current]);
+export type SlideData = {
+  id: string
+  src: string
+  alt?: string
+}
 
-  const goPrev = useCallback(() => {
-    if (slides.length === 0) return;
-    setDirection(-1);
-    setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
-  }, [slides.length]);
+const AUTO_DELAY = 4000
 
-  const goNext = useCallback(() => {
-    if (slides.length === 0) return;
-    setDirection(1);
-    setCurrent((prev) => (prev + 1) % slides.length);
-  }, [slides.length]);
 
-  // Handle swipe on mobile
-  const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    const threshold = 50;
-    if (info.offset.x > threshold) {
-      goPrev();
-    } else if (info.offset.x < -threshold) {
-      goNext();
+interface HeroCarouselProps {
+  slides?: SlideData[]
+}
+
+const HeroCarousel = ({ slides: propSlides }: HeroCarouselProps) => {
+  const { data: heroSlides = [] } = useHeroBanners()
+  const [api, setApi] = useState<CarouselApi | null>(null)
+  const [current, setCurrent] = useState(0)
+
+  // Normalize Shopify data if no slides prop
+  const slides = useMemo<SlideData[]>(() => {
+    if (propSlides && propSlides.length > 0) {
+      return propSlides
     }
-  };
+    return heroSlides
+      .map((slide, index) => {
+        if (!slide.image) return null
+        return {
+          id: slide.id ?? `hero-${index}`,
+          src: slide.image,
+          alt: slide.heading || slide.subheading || `Hero banner ${index + 1}`,
+        }
+      })
+      .filter(Boolean) as SlideData[]
+  }, [propSlides, heroSlides])
 
-  if (slides.length === 0) {
-    return <div className="h-[70vh] md:h-[85vh] bg-secondary animate-pulse" />;
-  }
+  // Track active slide for dots
+  useEffect(() => {
+    if (!api) return
 
-  const currentSlide = slides[current];
-  // Resolve image - check if it's a local path or Shopify URL
-  const resolvedImage = imageMap[currentSlide.image] || currentSlide.image;
+    const onSelect = () => {
+      setCurrent(api.selectedScrollSnap())
+    }
+
+    onSelect()
+    api.on("select", onSelect)
+
+    return () => {
+      api.off("select", onSelect)
+    }
+  }, [api])
+
+  if (slides.length === 0) return null
 
   return (
-    <section className="relative h-[70vh] md:h-[85vh] overflow-hidden">
-      <AnimatePresence mode="wait" custom={direction}>
-        <motion.div
-          key={current}
-          custom={direction}
-          initial={{ opacity: 0, scale: 1.1 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ duration: 0.8, ease: 'easeInOut' }}
-          className="absolute inset-0"
-          drag="x"
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.1}
-          onDragEnd={handleDragEnd}
+    <section className="w-full px-4 md:px-6 lg:px-8 py-4 md:py-6">
+      <div
+        className="mx-auto w-full"
+        style={{ maxWidth: "min(1400px, 92vw)" }}
+      >
+        <Carousel
+          setApi={setApi}
+          opts={{
+            loop: true,
+            align: "start",
+          }}
+          plugins={[
+            Autoplay({
+              delay: AUTO_DELAY,
+              stopOnInteraction: false,
+              stopOnMouseEnter: true,
+            }),
+          ]}
+          className="relative overflow-hidden rounded-2xl bg-background shadow-lg shadow-black/5"
         >
-          <img
-            src={resolvedImage}
-            alt={currentSlide.heading}
-            className="w-full h-full object-cover pointer-events-none"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-foreground/60 via-foreground/30 to-transparent" />
-        </motion.div>
-      </AnimatePresence>
+          <CarouselContent>
+            {slides.map((slide) => (
+              <CarouselItem key={slide.id}>
+                <div className="w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[420px] overflow-hidden rounded-2xl">
+                  <img
+                    src={slide.src}
+                    alt={slide.alt}
+                    className="w-full h-full object-cover"
+                    draggable={false}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
 
-      {/* Content */}
-      <div className="relative container h-full flex items-center px-4 md:px-6">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={current}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="max-w-xl pr-12 md:pr-0"
-          >
-            {currentSlide.badge && (
-              <span className="inline-block px-4 py-1.5 bg-golden/90 text-foreground text-sm font-medium rounded-full mb-6">
-                {currentSlide.badge}
-              </span>
-            )}
-            <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-cream mb-4 leading-tight">
-              {currentSlide.heading}
-            </h1>
-            <p className="text-base sm:text-lg md:text-xl text-cream/90 mb-8">
-              {currentSlide.subheading}
-            </p>
-            <Link
-              to={currentSlide.cta.link}
-              className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-cream text-foreground font-medium rounded-full hover:bg-golden transition-colors duration-300"
-            >
-              {currentSlide.cta.text}
-              <ChevronRight className="w-5 h-5" />
-            </Link>
-          </motion.div>
-        </AnimatePresence>
-      </div>
-
-      {/* Navigation Arrows - Desktop Only */}
-      <button
-        onClick={goPrev}
-        className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-background/20 backdrop-blur-sm rounded-full text-cream hover:bg-background/40 transition-colors"
-        aria-label="Previous slide"
-      >
-        <ChevronLeft className="w-6 h-6" />
-      </button>
-      <button
-        onClick={goNext}
-        className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-background/20 backdrop-blur-sm rounded-full text-cream hover:bg-background/40 transition-colors"
-        aria-label="Next slide"
-      >
-        <ChevronRight className="w-6 h-6" />
-      </button>
-
-      {/* Dots */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3">
-        {slides.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => goTo(index)}
-            className={`w-3 h-3 rounded-full transition-all duration-300 ${
-              index === current
-                ? 'bg-golden w-8'
-                : 'bg-cream/50 hover:bg-cream/80'
-            }`}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
+          {/* DOTS */}
+          {slides.length > 1 && (
+            <div className="absolute bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 flex gap-2">
+              {slides.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => api?.scrollTo(index)}
+                  className={`h-2 w-6 rounded-full transition-all duration-300 ${
+                    index === current
+                      ? "bg-golden"
+                      : "bg-foreground/30 hover:bg-foreground/50"
+                  }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </Carousel>
       </div>
     </section>
-  );
-};
+  )
+}
 
-export default HeroCarousel;
+export default HeroCarousel

@@ -1,4 +1,8 @@
+/* Previous typography (kept for reference)
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Outfit:wght@300;400;500;600;700&display=swap');
+*/
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.cdnfonts.com/css/samarkan');
 
 @tailwind base;
 @tailwind components;
@@ -6,9 +10,9 @@
 
 @layer base {
   :root {
-    /* AMATYA Organic Brand Colors */
-    --background: 45 33% 97%; /* Cream #F9F7F2 */
-    --foreground: 150 27% 23%; /* Organic Green #2D4739 */
+    /* AMATYA Organic Brand Colors (previous palette kept for reference)
+    --background: 45 33% 97%;
+    --foreground: 150 27% 23%;
 
     --card: 45 33% 97%;
     --card-foreground: 150 27% 23%;
@@ -16,7 +20,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 150 27% 23%;
 
-    --primary: 150 27% 23%; /* Organic Green #2D4739 */
+    --primary: 150 27% 23%;
     --primary-foreground: 45 33% 97%;
 
     --secondary: 45 33% 93%;
@@ -25,15 +29,38 @@
     --muted: 45 20% 90%;
     --muted-foreground: 150 15% 40%;
 
-    --accent: 16 60% 40%; /* Muted Red/Terracotta #A64B2A */
+    --accent: 16 60% 40%;
     --accent-foreground: 45 33% 97%;
+    */
+
+    /* Client Design System Palette */
+    --background: 0 0% 100%; /* Background #FFFFFF */
+    --foreground: 0 0% 18%; /* Main text #2E2E2E */
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 18%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 18%;
+
+    --primary: 150 59% 30%; /* Primary brand color #1F7A4C */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 96%; /* Section background #F5F5F5 */
+    --secondary-foreground: 0 0% 18%;
+
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 42%; /* Secondary text #6B6B6B */
+
+    --accent: 45 100% 51%; /* Accent CTA color #FFC107 */
+    --accent-foreground: 0 0% 18%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 150 15% 80%;
-    --input: 150 15% 85%;
-    --ring: 150 27% 23%;
+    --border: 0 0% 90%; /* Border / divider #E5E5E5 */
+    --input: 0 0% 90%;
+    --ring: 150 59% 30%;
 
     --radius: 0.5rem;
 
@@ -48,22 +75,25 @@
     --golden: 40 85% 55%;
     --golden-dark: 38 80% 45%;
     --honey: 35 80% 50%;
-    
+
     /* Gradients */
     --gradient-hero: linear-gradient(135deg, hsl(150 27% 23% / 0.9), hsl(150 27% 23% / 0.7));
     --gradient-cream: linear-gradient(180deg, hsl(45 33% 97%), hsl(45 25% 92%));
     --gradient-nature: linear-gradient(180deg, hsl(150 20% 35% / 0.1), transparent);
-    
+
     /* Shadows */
     --shadow-soft: 0 4px 20px -4px hsl(150 27% 23% / 0.15);
     --shadow-card: 0 8px 30px -8px hsl(150 27% 23% / 0.12);
     --shadow-hover: 0 12px 40px -10px hsl(150 27% 23% / 0.2);
     --shadow-glow: 0 0 40px hsl(40 85% 55% / 0.3);
 
-    /* Typography */
+    /* Typography (previous tokens kept for reference)
     --font-serif: 'Cormorant Garamond', Georgia, serif;
     --font-sans: 'Outfit', system-ui, sans-serif;
-    
+    */
+    --font-serif: 'Poppins', system-ui, sans-serif;
+    --font-sans: 'Inter', system-ui, sans-serif;
+
     /* Transitions */
     --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
@@ -106,7 +136,7 @@
     --border: 150 20% 20%;
     --input: 150 20% 20%;
     --ring: 45 33% 90%;
-    
+
     --sidebar-background: 150 30% 8%;
     --sidebar-foreground: 45 33% 95%;
     --sidebar-primary: 45 33% 95%;
@@ -115,6 +145,13 @@
     --sidebar-accent-foreground: 45 33% 95%;
     --sidebar-border: 150 20% 20%;
     --sidebar-ring: 45 33% 90%;
+  }
+
+  .font-brand-samarkan {
+    font-family: 'Samarkan', 'Poppins', serif;
+    letter-spacing: -0.05em;
+    text-transform: lowercase;
+    line-height: 1;
   }
 }
 
@@ -125,18 +162,24 @@
 
   html {
     scroll-behavior: smooth;
-    overflow-x: hidden;
+    overflow-x: hidden !important;
+    width: 100vw;
   }
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-feature-settings: "kern" 1, "liga" 1;
-    overflow-x: hidden;
+    overflow-x: hidden !important;
     max-width: 100vw;
+    width: 100vw;
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-serif font-semibold tracking-tight;
+  }
+
+  button {
+    font-weight: 500;
   }
 
   p {
@@ -145,11 +188,6 @@
 }
 
 @layer components {
-  /* Marquee Animation */
-  .marquee {
-    @apply flex gap-8 animate-marquee;
-  }
-
   /* Product Card Hover */
   .product-card {
     @apply relative overflow-hidden transition-all duration-500;
@@ -222,14 +260,6 @@
 
 @layer utilities {
   /* Custom animations */
-  .animate-marquee {
-    animation: marquee 30s linear infinite;
-  }
-
-  .animate-marquee-slow {
-    animation: marquee 45s linear infinite;
-  }
-
   .animate-float {
     animation: float 6s ease-in-out infinite;
   }
@@ -263,14 +293,14 @@
 }
 
 /* Keyframes */
-@keyframes marquee {
+/* @keyframes marquee {
   0% {
     transform: translateX(0);
   }
   100% {
     transform: translateX(-50%);
   }
-}
+} */
 
 @keyframes float {
   0%, 100% {
@@ -331,4 +361,22 @@ html.lenis {
 
 .lenis.lenis-scrolling iframe {
   pointer-events: none;
+}
+
+/* ---break---
+*/
+
+/* Marquee Animation (Fixed Infinite Scroll) */
+
+.animate-marquee {
+  animation: marquee 10s linear infinite;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
 }

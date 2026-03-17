@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, ShoppingBag, Heart, Menu, X, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, ShoppingBag, Heart, Menu, X, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
@@ -12,53 +12,56 @@ const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
+  const closeTimerRef = useRef<number | null>(null);
   const { totalItems, setIsOpen: setCartOpen } = useCart();
   const { items: wishlistItems } = useWishlist();
   const { data: collections = [] } = useCollections();
-  
-  // Mobile scroll refs
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
-  // Check scroll position
-  const checkScroll = () => {
-    const container = scrollContainerRef.current;
-    if (container) {
-      setCanScrollLeft(container.scrollLeft > 0);
-      setCanScrollRight(container.scrollLeft < container.scrollWidth - container.clientWidth - 5);
-    }
-  };
+  useEffect(() => {
+    if (!isMobileMenuOpen) return undefined;
+
+    const { body, documentElement } = document;
+    const previousBodyOverflow = body.style.overflow;
+    const previousRootOverflow = documentElement.style.overflow;
+
+    body.style.overflow = 'hidden';
+    documentElement.style.overflow = 'hidden';
+
+    return () => {
+      body.style.overflow = previousBodyOverflow;
+      documentElement.style.overflow = previousRootOverflow;
+    };
+  }, [isMobileMenuOpen]);
 
   useEffect(() => {
-    checkScroll();
     const container = scrollContainerRef.current;
-    if (container) {
-      container.addEventListener('scroll', checkScroll);
-      window.addEventListener('resize', checkScroll);
-    }
+    if (!container) return;
+
+    const updateScrollState = () => {
+      if (!scrollContainerRef.current) return;
+      const el = scrollContainerRef.current;
+      setCanScrollLeft(el.scrollLeft > 2);
+      setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+    };
+
+    updateScrollState();
+    container.addEventListener('scroll', updateScrollState, { passive: true });
+    window.addEventListener('resize', updateScrollState);
+
     return () => {
-      if (container) {
-        container.removeEventListener('scroll', checkScroll);
-      }
-      window.removeEventListener('resize', checkScroll);
+      container.removeEventListener('scroll', updateScrollState);
+      window.removeEventListener('resize', updateScrollState);
     };
   }, [collections]);
-
-  const scrollMobile = (direction: 'left' | 'right') => {
-    const container = scrollContainerRef.current;
-    if (container) {
-      const scrollAmount = 150;
-      container.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth',
-      });
-    }
-  };
-
+  
   // Static nav items
   const staticNavItems = [
     { name: 'About', slug: 'about', hasMega: false },
+    { name: 'Quality', slug: 'quality', hasMega: false },
   ];
 
   // Build nav items from collections
@@ -73,7 +76,7 @@ const Header = () => {
 
   return (
     <>
-      <header className="sticky top-[42px] z-40 bg-background border-b border-border w-full max-w-full overflow-x-hidden" style={{ backgroundColor: 'hsl(var(--background) / 0.95)', backdropFilter: 'blur(8px)' }}>
+      <header className="w-full max-w-full border-b border-border bg-background/95">
         <div className="container max-w-full">
           <div className="flex items-center justify-between h-16 md:h-20">
             {/* Mobile Menu Button */}
@@ -86,11 +89,11 @@ const Header = () => {
             </button>
 
             {/* Logo */}
-            <Link to="/" className="flex flex-col items-center">
-              <span className="font-serif text-2xl md:text-3xl font-bold tracking-wide text-foreground">
-                AMATYA
+            <Link to="/" className="flex flex-col items-left">
+              <span className="font-brand-samarkan text-2xl md:text-3xl tracking-[1px] font-bold text-foreground">
+                amatya
               </span>
-              <span className="text-[10px] md:text-xs tracking-[0.3em] text-muted-foreground uppercase">
+              <span className="text-[10px] md:text-xs tracking-[0.23em] text-muted-foreground uppercase">
                 The Amrit Essence
               </span>
             </Link>
@@ -101,8 +104,26 @@ const Header = () => {
                 <div
                   key={item.slug}
                   className="relative nav-item"
-                  onMouseEnter={() => item.hasMega && setActiveMenu(item.slug)}
-                  onMouseLeave={() => setActiveMenu(null)}
+                  onMouseEnter={(e) => {
+                    if (closeTimerRef.current) {
+                      window.clearTimeout(closeTimerRef.current);
+                      closeTimerRef.current = null;
+                    }
+                    if (item.hasMega) {
+                      setActiveMenu(item.slug);
+                      const el = e.currentTarget as HTMLElement;
+                      setAnchorRect(el.getBoundingClientRect());
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    // Delay closing to allow pointer to move to portal-mounted menu
+                    if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
+                    closeTimerRef.current = window.setTimeout(() => {
+                      setActiveMenu(null);
+                      setAnchorRect(null);
+                      closeTimerRef.current = null;
+                    }, 150);
+                  }}
                 >
                   <Link
                     to={item.hasMega ? `/category/${item.slug}` : `/${item.slug}`}
@@ -111,8 +132,29 @@ const Header = () => {
                     {item.name}
                     {item.hasMega && <ChevronDown className="w-4 h-4" />}
                   </Link>
+                  {/* Use a boundary wrapper to prevent flicker */}
                   {item.hasMega && activeMenu === item.slug && (
-                    <MegaMenu collectionSlug={item.slug} />
+                    <div>
+                      <MegaMenu
+                        collectionSlug={item.slug}
+                        anchorRect={anchorRect}
+                        onOpen={() => {
+                          if (closeTimerRef.current) {
+                            window.clearTimeout(closeTimerRef.current);
+                            closeTimerRef.current = null;
+                          }
+                          setActiveMenu(item.slug);
+                        }}
+                        onClose={() => {
+                          if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
+                          closeTimerRef.current = window.setTimeout(() => {
+                            setActiveMenu(null);
+                            setAnchorRect(null);
+                            closeTimerRef.current = null;
+                          }, 150);
+                        }}
+                      />
+                    </div>
                   )}
                 </div>
               ))}
@@ -154,46 +196,31 @@ const Header = () => {
             </div>
           </div>
 
-          {/* Category Pills - Mobile with scroll indicators */}
-          <div className="lg:hidden relative pb-3">
-            {/* Left Arrow */}
-            {canScrollLeft && (
-              <button
-                onClick={() => scrollMobile('left')}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-background/90 shadow-md rounded-full"
-                aria-label="Scroll left"
+          {/* Category Pills - Mobile/Tablet centered below logo with dots */}
+          <div className="pb-3 pt-2 lg:hidden">
+            <div className="relative px-4">
+              {canScrollLeft && (
+                <div className="pointer-events-none absolute left-4 top-1/2 h-8 w-6 -translate-y-1/2 bg-gradient-to-r from-background to-transparent" />
+              )}
+              {canScrollRight && (
+                <div className="pointer-events-none absolute right-4 top-1/2 h-8 w-6 -translate-y-1/2 bg-gradient-to-l from-background to-transparent" />
+              )}
+              <div
+                ref={scrollContainerRef}
+                className="flex gap-2 overflow-x-auto whitespace-nowrap px-1 py-1 scroll-smooth snap-x snap-mandatory"
+                style={{ scrollbarWidth: 'thin', msOverflowStyle: 'auto' }}
               >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            )}
-            
-            {/* Scroll Container */}
-            <div
-              ref={scrollContainerRef}
-              className="flex items-center gap-2 overflow-x-auto scrollbar-hide px-1"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
-              {collections.map((collection) => (
-                <Link
-                  key={collection.slug}
-                  to={`/category/${collection.slug}`}
-                  className="px-4 py-1.5 text-sm font-medium whitespace-nowrap bg-secondary hover:bg-primary hover:text-primary-foreground rounded-full transition-colors flex-shrink-0"
-                >
-                  {collection.name}
-                </Link>
-              ))}
+                {collections.map((collection) => (
+                  <Link
+                    key={collection.slug}
+                    to={`/category/${collection.slug}`}
+                    className="inline-flex shrink-0 snap-start rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-foreground hover:bg-primary hover:text-primary-foreground"
+                  >
+                    {collection.name}
+                  </Link>
+                ))}
+              </div>
             </div>
-            
-            {/* Right Arrow */}
-            {canScrollRight && (
-              <button
-                onClick={() => scrollMobile('right')}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-background/90 shadow-md rounded-full"
-                aria-label="Scroll right"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            )}
           </div>
         </div>
       </header>
@@ -207,43 +234,61 @@ const Header = () => {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
+            key="mobile-menu"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-background"
+            className="fixed inset-0 z-[70] flex"
           >
-            <div className="flex items-center justify-between p-4 border-b border-border">
-              <span className="font-serif text-2xl font-bold">Menu</span>
-              <button onClick={() => setIsMobileMenuOpen(false)} aria-label="Close menu">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <nav className="p-4 space-y-4">
-              {navItems.map((item) => (
-                <Link
-                  key={item.slug}
-                  to={item.hasMega ? `/category/${item.slug}` : `/${item.slug}`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="block py-3 text-lg font-medium border-b border-border"
-                >
-                  {item.name}
-                </Link>
-              ))}
-              <Link
-                to="/wishlist"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="block py-3 text-lg font-medium border-b border-border"
-              >
-                Wishlist
-              </Link>
-              <Link
-                to="/contact"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="block py-3 text-lg font-medium border-b border-border"
-              >
-                Contact
-              </Link>
-            </nav>
+            <div
+              className="absolute inset-0 bg-background/70 backdrop-blur-sm"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+            <motion.aside
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 280, damping: 32 }}
+              className="relative flex h-full min-h-screen w-full flex-col bg-background shadow-2xl"
+              role="dialog"
+              aria-modal="true"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                <span className="font-brand-samarkan text-2xl text-foreground">amatya</span>
+                <button onClick={() => setIsMobileMenuOpen(false)} aria-label="Close menu" className="p-2 -mr-2">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto px-5 pb-10 min-h-0">
+                <nav className="space-y-4 pt-4">
+                  {navItems.map((item) => (
+                    <Link
+                      key={item.slug}
+                      to={item.hasMega ? `/category/${item.slug}` : `/${item.slug}`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block py-3 text-lg font-medium border-b border-border"
+                    >
+                      {item.name}
+                    </Link>
+                  ))}
+                  <Link
+                    to="/wishlist"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block py-3 text-lg font-medium border-b border-border"
+                  >
+                    Wishlist
+                  </Link>
+                  <Link
+                    to="/contact"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block py-3 text-lg font-medium border-b border-border"
+                  >
+                    Contact
+                  </Link>
+                </nav>
+              </div>
+            </motion.aside>
           </motion.div>
         )}
       </AnimatePresence>

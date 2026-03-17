@@ -1,3 +1,16 @@
+import { fetchCollectionBanners } from '@/lib/shopify';
+// Hook to fetch collection banners for a given collection handle
+export function useCollectionBanners(collectionHandle?: string) {
+  return useQuery({
+    queryKey: ['shopify-collection-banners', collectionHandle],
+    queryFn: async () => {
+      if (!collectionHandle) return [];
+      return await fetchCollectionBanners(collectionHandle);
+    },
+    enabled: Boolean(collectionHandle),
+    staleTime: 1000 * 60 * 5,
+  });
+}
 // Custom hooks for Shopify data fetching with React Query
 
 import { useQuery } from '@tanstack/react-query';
@@ -5,6 +18,7 @@ import {
   fetchCollections,
   fetchCollectionByHandle,
   fetchProductByHandle,
+  fetchProductRecommendations,
   fetchProductsByTag,
   fetchAnnouncements,
   fetchHeroBanners,
@@ -12,7 +26,14 @@ import {
   isShopifyConfigured,
 } from '@/lib/shopify';
 import { categories, products, announcements as fallbackAnnouncements, getProductBySlug, getProductsByCategory, getFeaturedProducts } from '@/data/products';
-import type { NormalizedCollection, NormalizedProduct, NormalizedAnnouncement, NormalizedHeroBanner, NormalizedReview } from '@/lib/shopify';
+import type {
+  NormalizedCollection,
+  NormalizedProduct,
+  NormalizedAnnouncement,
+  NormalizedHeroBanner,
+  NormalizedReview,
+  NormalizedProductSection,
+} from '@/lib/shopify';
 
 // Fallback hero slides
 const fallbackHeroSlides = [
@@ -67,6 +88,30 @@ const fallbackReviews: NormalizedReview[] = [
   },
 ];
 
+const normalizeLocalSections = (sections?: {
+  id?: string;
+  title?: string;
+  type?: 'text' | 'list';
+  body?: string;
+  items?: string[];
+  order?: number;
+}[]): NormalizedProductSection[] => {
+  if (!sections || sections.length === 0) {
+    return [];
+  }
+
+  return sections
+    .map((section, index) => ({
+      id: section.id || `local-section-${index}`,
+      title: section.title || 'Details',
+      type: section.type ?? (section.items && section.items.length > 0 ? 'list' : 'text'),
+      body: section.body,
+      items: section.type === 'list' || !section.type ? section.items?.filter(Boolean) : undefined,
+      order: section.order ?? index,
+    }))
+    .sort((a, b) => a.order - b.order);
+};
+
 // Hook to fetch collections
 export function useCollections() {
   return useQuery({
@@ -78,7 +123,7 @@ export function useCollections() {
       if (shopifyCollections && shopifyCollections.length > 0) {
         return shopifyCollections;
       }
-      
+
       // Fallback to local data
       return categories.map(cat => ({
         id: cat.id,
@@ -89,7 +134,12 @@ export function useCollections() {
         productCount: cat.productCount,
         products: getProductsByCategory(cat.slug).map(p => ({
           ...p,
-          variants: p.variants.map((v, i) => ({ ...v, id: `${p.id}-${i}` })),
+          variants: p.variants.map((v, i) => ({
+            ...v,
+            id: `${p.id}-${i}`,
+            compareAtPrice: p.comparePrice && p.comparePrice > v.price ? p.comparePrice : undefined,
+          })),
+          sections: normalizeLocalSections(p.sections),
         })),
       })) as NormalizedCollection[];
     },
@@ -121,7 +171,12 @@ export function useCollection(handle: string) {
         productCount: cat.productCount,
         products: getProductsByCategory(cat.slug).map(p => ({
           ...p,
-          variants: p.variants.map((v, i) => ({ ...v, id: `${p.id}-${i}` })),
+          variants: p.variants.map((v, i) => ({
+            ...v,
+            id: `${p.id}-${i}`,
+            compareAtPrice: p.comparePrice && p.comparePrice > v.price ? p.comparePrice : undefined,
+          })),
+          sections: normalizeLocalSections(p.sections),
         })),
       } as NormalizedCollection;
     },
@@ -147,7 +202,12 @@ export function useProduct(handle: string) {
       
       return {
         ...product,
-        variants: product.variants.map((v, i) => ({ ...v, id: `${product.id}-${i}` })),
+        variants: product.variants.map((v, i) => ({
+          ...v,
+          id: `${product.id}-${i}`,
+          compareAtPrice: product.comparePrice && product.comparePrice > v.price ? product.comparePrice : undefined,
+        })),
+        sections: normalizeLocalSections(product.sections),
       } as NormalizedProduct;
     },
     staleTime: 1000 * 60 * 5,
@@ -171,9 +231,36 @@ export function useProductsByTag(tag: string) {
         .filter(p => p.badges.includes(tag))
         .map(p => ({
           ...p,
-          variants: p.variants.map((v, i) => ({ ...v, id: `${p.id}-${i}` })),
+          variants: p.variants.map((v, i) => ({
+            ...v,
+            id: `${p.id}-${i}`,
+            compareAtPrice: p.comparePrice && p.comparePrice > v.price ? p.comparePrice : undefined,
+          })),
         })) as NormalizedProduct[];
     },
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useProductRecommendations(productId?: string) {
+  const isShopifyId = Boolean(productId && productId.startsWith('gid://shopify/Product/'));
+
+  return useQuery({
+    queryKey: ['shopify-product-recommendations', productId],
+    queryFn: async () => {
+      if (!productId) {
+        return [] as NormalizedProduct[];
+      }
+
+      const shopifyRecommendations = await fetchProductRecommendations(productId);
+
+      if (shopifyRecommendations && shopifyRecommendations.length > 0) {
+        return shopifyRecommendations;
+      }
+
+      return [] as NormalizedProduct[];
+    },
+    enabled: isShopifyId,
     staleTime: 1000 * 60 * 5,
   });
 }
@@ -200,7 +287,11 @@ export function useFeaturedProducts() {
       // Fallback
       return getFeaturedProducts().map(p => ({
         ...p,
-        variants: p.variants.map((v, i) => ({ ...v, id: `${p.id}-${i}` })),
+        variants: p.variants.map((v, i) => ({
+          ...v,
+          id: `${p.id}-${i}`,
+          compareAtPrice: p.comparePrice && p.comparePrice > v.price ? p.comparePrice : undefined,
+        })),
       })) as NormalizedProduct[];
     },
     staleTime: 1000 * 60 * 5,
@@ -262,3 +353,34 @@ export function useReviews() {
 
 // Export utility to check if Shopify is configured
 export { isShopifyConfigured };
+
+// Shopify-only tagged products helper (no local fallback)
+export function useShopifyTaggedProducts(tags: string[]) {
+  return useQuery({
+    queryKey: ['shopify-products-tag-only', ...tags],
+    queryFn: async () => {
+      const results = await Promise.all(tags.map((tag) => fetchProductsByTag(tag)));
+
+      const combined = results
+        .filter((list): list is NormalizedProduct[] => Array.isArray(list) && list.length > 0)
+        .flat();
+
+      if (combined.length === 0) {
+        return [] as NormalizedProduct[];
+      }
+
+      const seen = new Set<string>();
+      const unique: NormalizedProduct[] = [];
+
+      for (const product of combined) {
+        if (!seen.has(product.id)) {
+          seen.add(product.id);
+          unique.push(product);
+        }
+      }
+
+      return unique;
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+}

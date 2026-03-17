@@ -3,9 +3,50 @@ import { X, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { createCartCheckout } from '@/lib/shopify/api';
+import { useState } from 'react';
 
 const CartDrawer = () => {
   const { items, isOpen, setIsOpen, removeFromCart, updateQuantity, totalPrice, totalItems } = useCart();
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+
+  const handleCheckout = async () => {
+    if (items.length === 0) return;
+
+    setIsCheckingOut(true);
+    try {
+      // Map cart items to checkout line items
+      const lines = items.map((item) => {
+        const variant = item.product.variants[item.variantIndex];
+        // Local fallback products don't have Shopify variant IDs, so they can't be sent to Shopify checkout.
+        if (!variant || typeof (variant as any).id !== 'string') {
+          console.error('Missing Shopify variant id for cart item:', item);
+          return null;
+        }
+        return {
+          merchandiseId: (variant as any).id as string,
+          quantity: item.quantity,
+        };
+      }).filter((line): line is { merchandiseId: string; quantity: number } => line !== null);
+
+      if (lines.length === 0) {
+        console.error('No valid Shopify line items found for checkout');
+        return;
+      }
+
+      // Create checkout and redirect
+      const checkoutUrl = await createCartCheckout(lines);
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+      } else {
+        console.error('Failed to create checkout');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -26,7 +67,7 @@ const CartDrawer = () => {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed right-0 top-0 h-full w-full max-w-md bg-background z-50 flex flex-col shadow-2xl"
+            className="fixed right-0 top-0 h-full w-full max-w-md bg-background z-[60] flex flex-col shadow-2xl"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-border">
@@ -89,7 +130,9 @@ const CartDrawer = () => {
                           {item.product.variants[item.variantIndex].weight}
                         </p>
                         <p className="font-serif font-bold text-foreground mt-1">
-                          ₹{item.product.variants[item.variantIndex].price}
+                          ₹{typeof item.product.variants[item.variantIndex].price === 'number' 
+                            ? item.product.variants[item.variantIndex].price.toLocaleString('en-IN')
+                            : item.product.variants[item.variantIndex].price}
                         </p>
 
                         <div className="flex items-center justify-between mt-2">
@@ -139,8 +182,12 @@ const CartDrawer = () => {
                 <p className="text-sm text-muted-foreground mb-4">
                   Shipping calculated at checkout
                 </p>
-                <Button className="w-full py-6 text-lg font-semibold">
-                  Proceed to Checkout
+                <Button 
+                  onClick={handleCheckout}
+                  disabled={isCheckingOut}
+                  className="w-full py-6 text-lg font-semibold"
+                >
+                  {isCheckingOut ? 'Processing...' : 'Proceed to Checkout'}
                 </Button>
               </div>
             )}

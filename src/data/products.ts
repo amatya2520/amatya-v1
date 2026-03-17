@@ -21,6 +21,14 @@ export interface Product {
   benefits: string[];
   ingredients?: string;
   inStock: boolean;
+  sections?: {
+    id: string;
+    title: string;
+    type: 'text' | 'list';
+    body?: string;
+    items?: string[];
+    order?: number;
+  }[];
 }
 
 export interface Category {
@@ -92,6 +100,7 @@ With its superior quality, traditional preparation, and wholesome benefits, our 
     benefits: ['Supports digestion', 'Boosts immunity', 'Brain function', 'Energy levels'],
     ingredients: '100% Pure A2 Gir Cow Milk',
     inStock: true,
+    sections: [],
   },
   {
     id: '2',
@@ -116,6 +125,7 @@ Known for its immunity-boosting properties, digestive support, and natural heali
     badges: ['trending', 'Raw & Unprocessed'],
     benefits: ['Immunity boosting', 'Digestive support', 'Natural healing', 'Energy boost'],
     inStock: true,
+    sections: [],
   },
   {
     id: '3',
@@ -139,6 +149,7 @@ With its refreshing taste and therapeutic qualities, Raw Tulsi Honey is ideal fo
     badges: ['new-launch'],
     benefits: ['Respiratory health', 'Stress relief', 'Digestive aid', 'Immunity boost'],
     inStock: true,
+    sections: [],
   },
   {
     id: '4',
@@ -162,6 +173,7 @@ With its warm aroma and bold medicinal taste, Raw Ajwain Honey is perfect for mo
     badges: [],
     benefits: ['Digestive support', 'Acidity relief', 'Metabolism boost', 'Respiratory health'],
     inStock: true,
+    sections: [],
   },
   {
     id: '5',
@@ -184,6 +196,7 @@ A healthier and more authentic alternative to refined sugar, Khaand Shree brings
     badges: ['best-seller'],
     benefits: ['Rich in minerals', 'Better digestion', 'Sustained energy', 'No chemicals'],
     inStock: true,
+    sections: [],
   },
   {
     id: '6',
@@ -206,6 +219,7 @@ Perfect for smoothies, detox drinks, puddings, salads, yogurt, or daily wellness
     badges: ['trending'],
     benefits: ['Omega-3 rich', 'Weight management', 'Energy boost', 'Hydration support'],
     inStock: true,
+    sections: [],
   },
 ];
 

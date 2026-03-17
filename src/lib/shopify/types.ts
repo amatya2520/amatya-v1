@@ -30,7 +30,7 @@ export interface ShopifyProduct {
   title: string;
   description: string;
   descriptionHtml: string;
-  tags: string[];
+  tags?: string[];
   images: {
     edges: { node: ShopifyImage }[];
   };
@@ -47,6 +47,34 @@ export interface ShopifyProduct {
   };
   collections?: {
     edges: { node: { handle: string; title: string } }[];
+  };
+  productSections?: ShopifyProductSectionsMetafield | null;
+}
+
+export interface ShopifyMetaobjectField {
+  value?: string | null;
+}
+
+export interface ShopifyProductSectionMetaobject {
+  id: string;
+  type?: string | null;
+  title?: ShopifyMetaobjectField;
+  heading?: ShopifyMetaobjectField;
+  body?: ShopifyMetaobjectField;
+  content?: ShopifyMetaobjectField;
+  sectionType?: ShopifyMetaobjectField;
+  typeField?: ShopifyMetaobjectField;
+  items?: ShopifyMetaobjectField;
+  listItems?: ShopifyMetaobjectField;
+  bullets?: ShopifyMetaobjectField;
+  order?: ShopifyMetaobjectField;
+}
+
+export interface ShopifyProductSectionsMetafield {
+  type?: string | null;
+  reference?: ShopifyProductSectionMetaobject | null;
+  references?: {
+    edges: { node: ShopifyProductSectionMetaobject }[];
   };
 }
 
@@ -67,17 +95,19 @@ export interface ShopifyCollection {
 
 export interface ShopifyAnnouncement {
   id: string;
-  text: { value: string };
+  text?: { value: string };
+  is_active?: { value: string };
+  order?: { value: string };
 }
 
 export interface ShopifyHeroBanner {
   id: string;
-  backgroundImage?: { reference?: { image?: ShopifyImage } };
-  badgeText?: { value: string };
+  background_image?: { reference?: { image?: ShopifyImage } };
+  badge_text?: { value: string };
   heading?: { value: string };
   description?: { value: string };
-  ctaText?: { value: string };
-  ctaLink?: { value: string };
+  cta_text?: { value: string };
+  cta_link?: { value: string };
 }
 
 export interface ShopifyReview {
@@ -91,6 +121,13 @@ export interface ShopifyReview {
 }
 
 // Normalized types for use in components
+export interface NormalizedProductVariant {
+  id: string;
+  weight: string;
+  price: number;
+  compareAtPrice?: number;
+}
+
 export interface NormalizedProduct {
   id: string;
   name: string;
@@ -102,11 +139,12 @@ export interface NormalizedProduct {
   images: string[];
   category: string;
   categorySlug: string;
-  variants: { weight: string; price: number; id: string }[];
+  variants: NormalizedProductVariant[];
   badges: string[];
   benefits: string[];
   ingredients?: string;
   inStock: boolean;
+  sections: NormalizedProductSection[];
 }
 
 export interface NormalizedCollection {
@@ -122,14 +160,16 @@ export interface NormalizedCollection {
 export interface NormalizedAnnouncement {
   id: string;
   text: string;
+  order: number;
+  isActive: boolean;
 }
 
 export interface NormalizedHeroBanner {
   id: string;
-  image: string;
+  image?: string;
   badge?: string;
-  heading: string;
-  subheading: string;
+  heading?: string;
+  subheading?: string;
   cta: { text: string; link: string };
 }
 
@@ -141,4 +181,16 @@ export interface NormalizedReview {
   text: string;
   product?: NormalizedProduct;
   image?: string;
+  videoUrl?: string;
+  videoMimeType?: string;
+  videoPreviewImage?: string;
+}
+
+export interface NormalizedProductSection {
+  id: string;
+  title: string;
+  type: 'text' | 'list';
+  body?: string;
+  items?: string[];
+  order: number;
 }

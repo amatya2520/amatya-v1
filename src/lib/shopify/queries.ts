@@ -1,3 +1,30 @@
+// Query for collection-specific banners (metaobjects)
+export const COLLECTION_BANNERS_QUERY = `
+  query CollectionBanners($first: Int = 20) {
+    metaobjects(type: "collection_banner", first: $first) {
+      edges {
+        node {
+          id
+          type
+          fields {
+            key
+            value
+            reference {
+              ... on Collection {
+                handle
+              }
+              ... on MediaImage {
+                image {
+                  url
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
 // Shopify GraphQL Queries
 
 export const COLLECTIONS_QUERY = `
@@ -193,6 +220,103 @@ export const PRODUCT_BY_HANDLE_QUERY = `
           }
         }
       }
+      productSections: metafield(namespace: "custom", key: "product_sections") {
+        type
+        reference {
+          ... on Metaobject {
+            id
+            type
+            title: field(key: "title") { value }
+            heading: field(key: "heading") { value }
+            body: field(key: "body") { value }
+            content: field(key: "content") { value }
+            sectionType: field(key: "section_type") { value }
+            typeField: field(key: "type") { value }
+            items: field(key: "items") { value }
+            listItems: field(key: "list_items") { value }
+            bullets: field(key: "bullets") { value }
+            order: field(key: "order") { value }
+          }
+        }
+        references(first: 10) {
+          edges {
+            node {
+              ... on Metaobject {
+                id
+                type
+                title: field(key: "title") { value }
+                heading: field(key: "heading") { value }
+                body: field(key: "body") { value }
+                content: field(key: "content") { value }
+                sectionType: field(key: "section_type") { value }
+                typeField: field(key: "type") { value }
+                items: field(key: "items") { value }
+                listItems: field(key: "list_items") { value }
+                bullets: field(key: "bullets") { value }
+                order: field(key: "order") { value }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const PRODUCT_RECOMMENDATIONS_QUERY = `
+  query GetProductRecommendations($productId: ID!) {
+    productRecommendations(productId: $productId) {
+      id
+      handle
+      title
+      description
+      tags
+      images(first: 10) {
+        edges {
+          node {
+            url
+            altText
+          }
+        }
+      }
+      priceRange {
+        minVariantPrice {
+          amount
+          currencyCode
+        }
+      }
+      compareAtPriceRange {
+        minVariantPrice {
+          amount
+        }
+      }
+      variants(first: 20) {
+        edges {
+          node {
+            id
+            title
+            availableForSale
+            price {
+              amount
+            }
+            compareAtPrice {
+              amount
+            }
+            selectedOptions {
+              name
+              value
+            }
+          }
+        }
+      }
+      collections(first: 1) {
+        edges {
+          node {
+            handle
+            title
+          }
+        }
+      }
     }
   }
 `;
@@ -265,7 +389,13 @@ export const ANNOUNCEMENTS_QUERY = `
       edges {
         node {
           id
-          field(key: "text") {
+          text: field(key: "text") {
+            value
+          }
+          is_active: field(key: "is_active") {
+            value
+          }
+          order: field(key: "order") {
             value
           }
         }
@@ -280,7 +410,7 @@ export const HERO_BANNERS_QUERY = `
       edges {
         node {
           id
-          field(key: "background_image") {
+          background_image: field(key: "background_image") {
             reference {
               ... on MediaImage {
                 image {
@@ -334,6 +464,7 @@ export const REVIEWS_QUERY = `
                 id
                 handle
                 title
+                description
                 priceRange {
                   minVariantPrice {
                     amount
@@ -369,7 +500,33 @@ export const REVIEWS_QUERY = `
               }
             }
           }
+          video: field(key: "video") {
+            reference {
+              ... on Video {
+                sources {
+                  url
+                  mimeType
+                }
+                previewImage {
+                  url
+                }
+              }
+            }
+          }
         }
+      }
+    }
+  }
+`;
+export const CART_CREATE_MUTATION = `
+  mutation CartCreate($lines: [CartLineInput!]!) {
+    cartCreate(input: { lines: $lines }) {
+      cart {
+        id
+        checkoutUrl
+      }
+      userErrors {
+        message
       }
     }
   }

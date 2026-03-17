@@ -1,3 +1,4 @@
+import { Marquee } from "@/components/ui/marquee"
 import { useAnnouncements } from '@/hooks/useShopify';
 
 const AnnouncementBar = () => {
@@ -7,22 +8,22 @@ const AnnouncementBar = () => {
     return null;
   }
 
-  // Duplicate for seamless marquee
-  const duplicatedAnnouncements = [...announcements, ...announcements];
-
   return (
-    <div className="sticky top-0 z-50 bg-primary text-primary-foreground py-2.5 overflow-hidden">
-      <div className="flex animate-marquee whitespace-nowrap">
-        {duplicatedAnnouncements.map((announcement, index) => (
+    <div className="flex h-11 w-full items-center overflow-hidden bg-primary text-primary-foreground shadow-sm">
+      <Marquee
+        repeat={6}
+        pauseOnHover
+        className="py-2"
+      >
+        {announcements.map((announcement) => (
           <span
-            key={`${announcement.id}-${index}`}
-            className="mx-8 text-sm font-medium tracking-wide flex items-center gap-2"
+            key={announcement.id}
+            className="mx-8 text-sm font-medium "
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-golden" />
             {announcement.text}
           </span>
         ))}
-      </div>
+      </Marquee>
     </div>
   );
 };

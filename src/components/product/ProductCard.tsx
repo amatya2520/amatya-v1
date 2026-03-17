@@ -15,7 +15,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const { addToCart, setIsOpen } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
 
-  const inWishlist = isInWishlist(product.id);
+  const inWishlist = isInWishlist(product.id, selectedVariant);
 
   const getBadgeStyle = (badge: string) => {
     const lowerBadge = badge.toLowerCase();
@@ -46,17 +46,23 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addToCart(product as any, selectedVariant, 1);
+    addToCart(product, selectedVariant, 1);
     setIsOpen(true);
   };
 
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    toggleWishlist(product as any);
+    toggleWishlist(product, selectedVariant);
   };
 
-  const currentPrice = product.variants[selectedVariant]?.price || product.price;
+  const selectedVariantData = product.variants[selectedVariant] ?? product.variants[0];
+  const currentPrice = Number(selectedVariantData?.price ?? product.price ?? 0);
+  const comparePrice = selectedVariantData?.compareAtPrice ?? product.comparePrice;
+  const comparePriceNum = typeof comparePrice === 'number' ? comparePrice :
+                          (typeof comparePrice === 'string' ? Number(comparePrice) : undefined);
+  const showDiscount = typeof comparePriceNum === 'number' && comparePriceNum > currentPrice;
+  const discountPercent = showDiscount ? Math.round((1 - currentPrice / comparePriceNum!) * 100) : null;
 
   return (
     <motion.div
@@ -142,6 +148,14 @@ const ProductCard = ({ product }: ProductCardProps) => {
                 }`}
               >
                 {variant.weight}
+                {/* <span className="block text-[9px] md:text-[11px] font-normal opacity-80">
+                  ₹{variant.price.toLocaleString('en-IN')}
+                </span>
+                {variant.compareAtPrice && variant.compareAtPrice > variant.price && (
+                  <span className="block text-[9px] md:text-[11px] text-muted-foreground line-through">
+                    ₹{variant.compareAtPrice.toLocaleString('en-IN')}
+                  </span>
+                )} */}
               </button>
             ))}
           </div>
@@ -150,11 +164,16 @@ const ProductCard = ({ product }: ProductCardProps) => {
         {/* Price */}
         <div className="flex items-center gap-2">
           <span className="font-sans text-lg md:text-xl font-bold text-foreground">
-            ₹{currentPrice}
+            ₹{currentPrice.toLocaleString('en-IN')}
           </span>
-          {product.comparePrice && product.comparePrice > currentPrice && (
+          {showDiscount && comparePriceNum && (
             <span className="text-xs md:text-sm text-muted-foreground line-through">
-              ₹{product.comparePrice}
+              ₹{comparePriceNum.toLocaleString('en-IN')}
+            </span>
+          )}
+          {discountPercent && (
+            <span className="px-2 py-0.5 bg-accent/10 text-accent text-[10px] md:text-xs font-semibold rounded-full">
+              {discountPercent}% OFF
             </span>
           )}
         </div>

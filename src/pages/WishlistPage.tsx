@@ -10,16 +10,15 @@ const WishlistPage = () => {
   const { items, removeFromWishlist, clearWishlist } = useWishlist();
   const { addToCart, setIsOpen } = useCart();
 
-  const handleAddToCart = (product: typeof items[0]) => {
-    addToCart(product as any, 0, 1);
+  const handleAddToCart = (item: { product: any; variantIndex: number }) => {
+    addToCart(item.product, item.variantIndex, 1);
     setIsOpen(true);
   };
 
   const handleAddAllToCart = () => {
     items.forEach((item) => {
-      addToCart(item as any, 0, 1);
+      handleAddToCart(item);
     });
-    setIsOpen(true);
   };
 
   return (
@@ -64,7 +63,25 @@ const WishlistPage = () => {
 
         {items.length > 0 ? (
           <div className="grid gap-4">
-            {items.map((item, index) => (
+            {items.map((item, index) => {
+              // Get the selected variant; fallback to first variant if index out of bounds
+              const variant = item.product.variants && item.variantIndex >= 0 && item.variantIndex < item.product.variants.length
+                ? item.product.variants[item.variantIndex]
+                : item.product.variants?.[0];
+              
+              // Extract numeric price explicitly; ensure it's always a number, never a string
+              const variantPrice = Math.max(
+                0,
+                Number(variant?.price ?? item.product.price ?? 0)
+              );
+              
+              // Extract compare price - handle both NormalizedProduct (with compareAtPrice on variant) and Product (without it)
+              const variantCompareAtPrice = (variant as any)?.compareAtPrice;
+              const comparePrice = typeof variantCompareAtPrice === 'number' 
+                ? variantCompareAtPrice
+                : (typeof item.product.comparePrice === 'number' ? item.product.comparePrice : undefined);
+
+              return (
               <motion.div
                 key={item.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -74,12 +91,12 @@ const WishlistPage = () => {
               >
                 {/* Product Image */}
                 <Link
-                  to={`/product/${item.slug}`}
+                  to={`/product/${item.product.slug}`}
                   className="flex-shrink-0 w-24 h-24 md:w-32 md:h-32 rounded-lg overflow-hidden bg-secondary"
                 >
                   <img
-                    src={item.images[0]}
-                    alt={item.name}
+                    src={item.product.images[0]}
+                    alt={item.product.name}
                     className="w-full h-full object-cover"
                   />
                 </Link>
@@ -87,34 +104,27 @@ const WishlistPage = () => {
                 {/* Product Info */}
                 <div className="flex-1 min-w-0">
                   <Link
-                    to={`/product/${item.slug}`}
+                    to={`/product/${item.product.slug}`}
                     className="font-medium text-foreground hover:text-accent transition-colors line-clamp-1"
                   >
-                    {item.name}
+                    {item.product.name}
                   </Link>
                   <p className="text-sm text-muted-foreground mb-2 line-clamp-1">
-                    {item.shortDescription}
+                    {item.product.shortDescription}
                   </p>
                   <p className="font-semibold text-foreground">
-                    ₹{item.price}
-                    {item.comparePrice && item.comparePrice > item.price && (
+                    ₹{variantPrice > 0 ? variantPrice.toLocaleString('en-IN') : '0'}
+                    {comparePrice && typeof comparePrice === 'number' && comparePrice > variantPrice && (
                       <span className="ml-2 text-sm text-muted-foreground line-through">
-                        ₹{item.comparePrice}
+                        ₹{comparePrice.toLocaleString('en-IN')}
                       </span>
                     )}
                   </p>
 
-                  {/* Variants */}
-                  {item.variants.length > 1 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {item.variants.slice(0, 3).map((variant, i) => (
-                        <span
-                          key={i}
-                          className="px-2 py-0.5 text-xs bg-secondary rounded-full"
-                        >
-                          {variant.weight}
-                        </span>
-                      ))}
+                  {/* Selected variant label (explicit) */}
+                  {item.product.variants && item.product.variants[item.variantIndex] && (
+                    <div className="text-sm text-muted-foreground mt-2">
+                      Variant: {item.product.variants[item.variantIndex].weight}
                     </div>
                   )}
                 </div>
@@ -139,7 +149,7 @@ const WishlistPage = () => {
                   </Button>
                 </div>
               </motion.div>
-            ))}
+            )})}
           </div>
         ) : (
           <motion.div

@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { X, Search, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { categories, products } from '@/data/products';
+import { useQuery } from '@tanstack/react-query';
+import { fetchCollections } from '@/lib/shopify';
+import type { NormalizedProduct } from '@/lib/shopify';
 
 interface SearchOverlayProps {
   onClose: () => void;
@@ -20,6 +23,44 @@ const SearchOverlay = ({ onClose }: SearchOverlayProps) => {
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [displayPlaceholder, setDisplayPlaceholder] = useState('');
   const [isTyping, setIsTyping] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  const { data: shopifyCollections = [], isLoading } = useQuery({
+    queryKey: ['search-shopify-collections'],
+    queryFn: async () => (await fetchCollections()) ?? [],
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const shopifyProducts = useMemo<NormalizedProduct[]>(() => {
+    const unique = new Map<string, NormalizedProduct>();
+
+    shopifyCollections.forEach((collection) => {
+      collection.products?.forEach((product) => {
+        if (!unique.has(product.id)) {
+          unique.set(product.id, product);
+        }
+      });
+    });
+
+    return Array.from(unique.values());
+  }, [shopifyCollections]);
+
+  const trendingCollections = useMemo(() => {
+    const seen = new Set<string>();
+    const result: typeof shopifyCollections = [];
+
+    for (const collection of shopifyCollections) {
+      if (!seen.has(collection.id)) {
+        seen.add(collection.id);
+        result.push(collection);
+      }
+      if (result.length === 8) {
+        break;
+      }
+    }
+
+    return result;
+  }, [shopifyCollections]);
 
   // Typewriter effect
   useEffect(() => {
@@ -46,15 +87,37 @@ const SearchOverlay = ({ onClose }: SearchOverlayProps) => {
     }
   }, [placeholderIndex, isTyping]);
 
-  const filteredProducts = query
-    ? products.filter(
-        (p) =>
-          p.name.toLowerCase().includes(query.toLowerCase()) ||
-          p.category.toLowerCase().includes(query.toLowerCase())
-      )
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  const normalizedQuery = query.trim().toLowerCase();
+
+  const filteredProducts = normalizedQuery
+    ? shopifyProducts.filter((product) => {
+        const nameMatch = product.name.toLowerCase().includes(normalizedQuery);
+        const descriptionMatch = product.description?.toLowerCase().includes(normalizedQuery);
+        const collectionMatch = product.category?.toLowerCase().includes(normalizedQuery);
+        return nameMatch || descriptionMatch || collectionMatch;
+      })
     : [];
 
-  return (
+  const filteredCollections = normalizedQuery
+    ? shopifyCollections.filter((collection) => {
+        const nameMatch = collection.name.toLowerCase().includes(normalizedQuery);
+        const descriptionMatch = collection.description?.toLowerCase().includes(normalizedQuery);
+        return nameMatch || descriptionMatch;
+      })
+    : [];
+
+  const noResults = normalizedQuery.length > 0 && filteredProducts.length === 0 && filteredCollections.length === 0;
+
+  if (!mounted || typeof document === 'undefined') {
+    return null;
+  }
+
+  return createPortal(
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -88,64 +151,112 @@ const SearchOverlay = ({ onClose }: SearchOverlayProps) => {
         </div>
 
         {/* Results or Trending */}
-        {query ? (
-          <div className="max-w-2xl mx-auto">
-            <p className="text-sm text-muted-foreground mb-4">
-              {filteredProducts.length} results for "{query}"
+        {normalizedQuery ? (
+          <div className="max-w-2xl mx-auto space-y-6">
+            <p className="text-sm text-muted-foreground">
+              Showing {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''}
+              {filteredCollections.length > 0 && ` and ${filteredCollections.length} collection${filteredCollections.length !== 1 ? 's' : ''}`} for "{query}"
             </p>
-            <div className="space-y-4">
-              {filteredProducts.map((product) => (
-                <Link
-                  key={product.id}
-                  to={`/product/${product.slug}`}
-                  onClick={onClose}
-                  className="flex items-center gap-4 p-4 bg-card rounded-lg hover:shadow-card transition-shadow"
-                >
-                  <img
-                    src={product.images[0]}
-                    alt={product.name}
-                    className="w-16 h-16 object-cover rounded-lg"
-                  />
-                  <div>
-                    <h3 className="font-medium">{product.name}</h3>
-                    <p className="text-sm text-muted-foreground">{product.category}</p>
-                    <p className="text-sm font-semibold text-accent">₹{product.price}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
+
+            {noResults && (
+              <div className="rounded-2xl border border-dashed border-muted-foreground/40 p-8 text-center text-muted-foreground">
+                No results found. Try a different search term.
+              </div>
+            )}
+
+            {filteredProducts.length > 0 && (
+              <div className="space-y-4">
+                {filteredProducts.map((product) => (
+                  <Link
+                    key={product.id}
+                    to={`/product/${product.slug}`}
+                    onClick={onClose}
+                    className="flex items-center gap-4 p-4 bg-card rounded-lg hover:shadow-card transition-shadow"
+                  >
+                    <img
+                      src={product.images[0]}
+                      alt={product.name}
+                      className="w-16 h-16 object-cover rounded-lg"
+                    />
+                    <div>
+                      <h3 className="font-medium">{product.name}</h3>
+                      <p className="text-sm text-muted-foreground">{product.category}</p>
+                      <p className="text-sm font-semibold text-accent">₹{product.price.toLocaleString('en-IN')}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {filteredCollections.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Collections</h4>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {filteredCollections.map((collection) => (
+                    <Link
+                      key={collection.id}
+                      to={`/category/${collection.slug}`}
+                      onClick={onClose}
+                      className="group relative overflow-hidden rounded-2xl bg-card"
+                    >
+                      <img
+                        src={collection.image}
+                        alt={collection.name}
+                        className="h-32 w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="p-4">
+                        <h3 className="font-medium">{collection.name}</h3>
+                        {collection.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-2">{collection.description}</p>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
-          <div className="max-w-2xl mx-auto">
-            <div className="flex items-center gap-2 mb-6">
+          <div className="max-w-2xl mx-auto space-y-6">
+            <div className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-accent" />
               <span className="font-medium">Trending Categories</span>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {categories.map((category) => (
-                <Link
-                  key={category.slug}
-                  to={`/category/${category.slug}`}
-                  onClick={onClose}
-                  className="group relative aspect-square rounded-2xl overflow-hidden"
-                >
-                  <img
-                    src={category.image}
-                    alt={category.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 to-transparent flex items-end p-4">
-                    <span className="text-primary-foreground font-medium">
-                      {category.name}
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
+
+            {isLoading ? (
+              <div className="rounded-2xl border border-dashed border-muted-foreground/40 p-8 text-center text-muted-foreground">
+                Loading collections...
+              </div>
+            ) : shopifyCollections.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-muted-foreground/40 p-8 text-center text-muted-foreground">
+                No collections available.
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                {trendingCollections.slice(0, 4).map((collection) => (
+                  <Link
+                    key={collection.id}
+                    to={`/category/${collection.slug}`}
+                    onClick={onClose}
+                    className="group relative aspect-square overflow-hidden rounded-2xl"
+                  >
+                    <img
+                      src={collection.image}
+                      alt={collection.name}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 flex items-end bg-gradient-to-t from-foreground/80 to-transparent p-4">
+                      <span className="text-primary-foreground font-medium">{collection.name}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 };
 
