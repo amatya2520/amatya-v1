@@ -157,11 +157,12 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <Link to="/" className="inline-block mb-6">
-              <span className="font-brand-samarkan text-3xl tracking-[1px] font-bold">amatya</span>
-              <span className="block text-xs tracking-[0.23em] opacity-80 mt-1">
-                THE AMRIT ESSENCE
-              </span>
+            <Link to="/" className="mb-6 inline-flex items-center">
+              <img
+                src="/amatya-logo.png"
+                alt="Amatya Logo"
+                className="h-12 w-auto object-contain brightness-0 invert md:h-14"
+              />
             </Link>
             <p className="text-sm opacity-80 mb-6 leading-relaxed">
               At Amatya we bring the purity of rural traditions to your modern kitchen. 

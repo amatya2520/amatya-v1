@@ -101,13 +101,12 @@ const Header = () => {
             </button>
 
             {/* Logo */}
-            <Link to="/" className="flex flex-col items-left">
-              <span className="font-brand-samarkan text-2xl md:text-3xl tracking-[1px] font-bold text-foreground">
-                amatya
-              </span>
-              <span className="text-[10px] md:text-xs tracking-[0.23em] text-muted-foreground uppercase">
-                The Amrit Essence
-              </span>
+            <Link to="/" className="flex shrink-0 items-center">
+              <img
+                src="/amatya-logo.png"
+                alt="Amatya Logo"
+                className="h-10 w-auto object-contain brightness-0 md:h-12"
+              />
             </Link>
 
             {/* Desktop Navigation */}
@@ -273,7 +272,13 @@ const Header = () => {
               onClick={(event) => event.stopPropagation()}
             >
               <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-                <span className="font-brand-samarkan text-2xl text-foreground">amatya</span>
+                <Link to="/" className="flex items-center" onClick={() => setIsMobileMenuOpen(false)}>
+                  <img
+                    src="/amatya-logo.png"
+                    alt="Amatya Logo"
+                    className="h-10 w-auto object-contain brightness-0 md:h-12"
+                  />
+                </Link>
                 <button onClick={() => setIsMobileMenuOpen(false)} aria-label="Close menu" className="p-2 -mr-2">
                   <X className="w-6 h-6" />
                 </button>
