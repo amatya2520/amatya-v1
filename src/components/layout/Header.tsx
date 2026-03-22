@@ -58,21 +58,33 @@ const Header = () => {
     };
   }, [collections]);
   
-  // Static nav items
+  // Home first, then collections (API), then static pages: About, Quality
+  const homeNavItem = {
+    name: 'Home',
+    slug: 'home',
+    hasMega: false as const,
+    href: '/' as const,
+  };
+
   const staticNavItems = [
-    { name: 'About', slug: 'about', hasMega: false },
-    { name: 'Quality', slug: 'quality', hasMega: false },
+    { name: 'About', slug: 'about', hasMega: false as const },
+    { name: 'Quality', slug: 'quality', hasMega: false as const },
   ];
 
-  // Build nav items from collections
-  const navItems = [
-    ...collections.slice(0, 5).map(col => ({
-      name: col.name,
-      slug: col.slug,
-      hasMega: true,
-    })),
-    ...staticNavItems,
-  ];
+  const collectionNavItems = collections.slice(0, 5).map((col) => ({
+    name: col.name,
+    slug: col.slug,
+    hasMega: true as const,
+  }));
+
+  const navItems = [homeNavItem, ...collectionNavItems, ...staticNavItems];
+
+  const getNavTo = (item: (typeof navItems)[number]) =>
+    'href' in item && item.href
+      ? item.href
+      : item.hasMega
+        ? `/category/${item.slug}`
+        : `/${item.slug}`;
 
   return (
     <>
@@ -126,7 +138,7 @@ const Header = () => {
                   }}
                 >
                   <Link
-                    to={item.hasMega ? `/category/${item.slug}` : `/${item.slug}`}
+                    to={getNavTo(item)}
                     className="flex items-center gap-1 py-2 text-sm font-medium text-foreground hover:text-accent transition-colors"
                   >
                     {item.name}
@@ -210,6 +222,12 @@ const Header = () => {
                 className="flex gap-2 overflow-x-auto whitespace-nowrap px-1 py-1 scroll-smooth snap-x snap-mandatory"
                 style={{ scrollbarWidth: 'thin', msOverflowStyle: 'auto' }}
               >
+                <Link
+                  to="/"
+                  className="inline-flex shrink-0 snap-start rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-foreground hover:bg-primary hover:text-primary-foreground"
+                >
+                  Home
+                </Link>
                 {collections.map((collection) => (
                   <Link
                     key={collection.slug}
@@ -265,7 +283,7 @@ const Header = () => {
                   {navItems.map((item) => (
                     <Link
                       key={item.slug}
-                      to={item.hasMega ? `/category/${item.slug}` : `/${item.slug}`}
+                      to={getNavTo(item)}
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="block py-3 text-lg font-medium border-b border-border"
                     >
