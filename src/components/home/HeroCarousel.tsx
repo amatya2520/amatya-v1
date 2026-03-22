@@ -65,62 +65,55 @@ const HeroCarousel = ({ slides: propSlides }: HeroCarouselProps) => {
   if (slides.length === 0) return null
 
   return (
-    <section className="w-full px-4 md:px-6 lg:px-8 py-4 md:py-6">
-      <div
-        className="mx-auto w-full"
-        style={{ maxWidth: "min(1400px, 92vw)" }}
+    <section className="px-4 md:px-6 lg:px-8">
+      <Carousel
+        setApi={setApi}
+        opts={{
+          loop: true,
+          align: "start",
+        }}
+        plugins={[
+          Autoplay({
+            delay: AUTO_DELAY,
+            stopOnInteraction: false,
+            stopOnMouseEnter: true,
+          }),
+        ]}
+        className="relative overflow-hidden"
       >
-        <Carousel
-          setApi={setApi}
-          opts={{
-            loop: true,
-            align: "start",
-          }}
-          plugins={[
-            Autoplay({
-              delay: AUTO_DELAY,
-              stopOnInteraction: false,
-              stopOnMouseEnter: true,
-            }),
-          ]}
-          className="relative overflow-hidden rounded-2xl bg-background shadow-lg shadow-black/5"
-        >
-          <CarouselContent>
-            {slides.map((slide) => (
-              <CarouselItem key={slide.id}>
-                <div className="w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[420px] overflow-hidden rounded-2xl">
-                  <img
-                    src={slide.src}
-                    alt={slide.alt}
-                    className="w-full h-full object-cover"
-                    draggable={false}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
+        <CarouselContent>
+          {slides.map((slide) => (
+            <CarouselItem key={slide.id} >
+              <img
+                src={slide.src}
+                alt={slide.alt}
+                className="w-full h-[300px] md:h-[400px] lg:h-[450px] object-cover rounded-xl"
+                draggable={false}
+                loading="lazy"
+                decoding="async"
+              />
+            </CarouselItem>
+          ))}
+        </CarouselContent>
 
-          {/* DOTS */}
-          {slides.length > 1 && (
-            <div className="absolute bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 flex gap-2">
-              {slides.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => api?.scrollTo(index)}
-                  className={`h-2 w-6 rounded-full transition-all duration-300 ${
-                    index === current
-                      ? "bg-golden"
-                      : "bg-foreground/30 hover:bg-foreground/50"
-                  }`}
-                  aria-label={`Go to slide ${index + 1}`}
-                />
-              ))}
-            </div>
-          )}
-        </Carousel>
-      </div>
+        {/* DOTS */}
+        {slides.length > 1 && (
+          <div className="absolute bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 flex gap-2">
+            {slides.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => api?.scrollTo(index)}
+                className={`h-2 w-6 rounded-full transition-all duration-300 ${
+                  index === current
+                    ? "bg-golden"
+                    : "bg-foreground/30 hover:bg-foreground/50"
+                }`}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
+        )}
+      </Carousel>
     </section>
   )
 }
