@@ -2,11 +2,8 @@ import Layout from '@/components/layout/Layout';
 import { motion } from 'framer-motion';
 import HeroCarousel from '@/components/home/HeroCarousel';
 import CategoryCircles from '@/components/home/CategoryCircles';
-import CategoryFilter from '@/components/home/CategoryFilter';
+import AllProducts from '@/components/home/AllProducts';
 import BrandStory from '@/components/home/BrandStory';
-import FeaturedProducts from '@/components/home/FeaturedProducts';
-import BestsellersSection from '@/components/home/BestsellersSection';
-import TrendingSection from '@/components/home/TrendingSection';
 import Testimonials from '@/components/home/Testimonials';
 
 const Index = () => {
@@ -20,11 +17,8 @@ const Index = () => {
       >
         <HeroCarousel />
         <CategoryCircles />
-        <CategoryFilter />
+        <AllProducts />
         <BrandStory />
-        <FeaturedProducts />
-        <BestsellersSection />
-        <TrendingSection />
         <Testimonials />
       </motion.div>
     </Layout>

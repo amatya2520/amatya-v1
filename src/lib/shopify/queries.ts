@@ -28,7 +28,7 @@ export const COLLECTION_BANNERS_QUERY = `
 // Shopify GraphQL Queries
 
 export const COLLECTIONS_QUERY = `
-  query GetCollections($first: Int = 10) {
+  query GetCollections($first: Int = 50) {
     collections(first: $first) {
       edges {
         node {
@@ -40,7 +40,7 @@ export const COLLECTIONS_QUERY = `
             url
             altText
           }
-          products(first: 10) {
+          products(first: 250) {
             edges {
               node {
                 id
@@ -109,7 +109,7 @@ export const COLLECTION_BY_HANDLE_QUERY = `
         url
         altText
       }
-      products(first: 50) {
+      products(first: 250) {
         edges {
           node {
             id
