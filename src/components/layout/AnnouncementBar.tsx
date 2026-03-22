@@ -1,4 +1,4 @@
-import { Marquee } from "@/components/ui/marquee"
+import Marquee from "react-fast-marquee";
 import { useAnnouncements } from '@/hooks/useShopify';
 
 const AnnouncementBar = () => {
@@ -8,17 +8,20 @@ const AnnouncementBar = () => {
     return null;
   }
 
+  const repeatedAnnouncements = Array(4).fill(announcements).flat();
+
   return (
-    <div className="flex h-11 w-full items-center overflow-hidden bg-primary text-primary-foreground shadow-sm">
+    <div className="flex h-11 w-full items-center overflow-hidden bg-primary/90 text-primary-foreground shadow-sm">
       <Marquee
-        repeat={6}
+        speed={40}
+        gradient={false}
         pauseOnHover
-        className="py-2"
+        direction="left"
       >
-        {announcements.map((announcement) => (
+        {repeatedAnnouncements.map((announcement, index) => (
           <span
-            key={announcement.id}
-            className="mx-8 text-sm font-medium "
+            key={`${announcement.id}-${index}`}
+            className="mx-8 text-sm font-medium whitespace-nowrap"
           >
             {announcement.text}
           </span>
