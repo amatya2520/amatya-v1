@@ -65,7 +65,7 @@ const HeroCarousel = ({ slides: propSlides }: HeroCarouselProps) => {
   if (slides.length === 0) return null
 
   return (
-    <section className="px-4 md:px-6 lg:px-8">
+    <section>
       <Carousel
         setApi={setApi}
         opts={{
@@ -87,7 +87,7 @@ const HeroCarousel = ({ slides: propSlides }: HeroCarouselProps) => {
               <img
                 src={slide.src}
                 alt={slide.alt}
-                className="w-full h-[300px] md:h-[400px] lg:h-[450px] object-cover rounded-xl"
+                className="w-full h-[300px] md:h-[400px] lg:h-[450px] object-cover"
                 draggable={false}
                 loading="lazy"
                 decoding="async"

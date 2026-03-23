@@ -46,7 +46,7 @@ const CategoryCircles = () => {
   }
 
   return (
-    <section className="py-16 md:py-10 bg-gradient-cream w-full mt-5 overflow-x-hidden">
+    <section className="py-16 md:py-10 bg-gradient-cream w-full overflow-x-hidden">
       <div className="container px-4 max-w-full">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
